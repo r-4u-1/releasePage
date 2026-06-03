@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Systemet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue:       #0064A3;
+      --blue-dark:  #004E7C;
+      --blue-light: #EAF3FB;
+      --text:       #1A1A1A;
+      --text-mid:   #505050;
+      --text-light: #909090;
+      --white:      #FFFFFF;
+      --bg:         #F5F5F5;
+      --border:     #D8D8D8;
+
+      --rise-start:  70px;
+      --slide-start: 50px;
+      --dur1:        550ms;
+      --dur2:        440ms;
+      --body-fade:   600ms;
+    }
+
+    html, body {
+      height: 100%;
+      background: var(--white);
+      color: var(--text);
+      font-family: 'Barlow', Helvetica, Arial, sans-serif;
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Page = single full-viewport hero ───────────────────────────────────── */
+
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 55% 45%;
+    }
+
+    /* ── Left: photo background + text ─────────────────────────────────────── */
+
+    .hero-left {
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 4rem 3.5rem;
+    }
+
+    /* Warm lifestyle photography simulation */
+    .hero-left::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(180deg,
+          rgba(26, 26, 26, 0)   0%,
+          rgba(26, 26, 26, 0.1) 35%,
+          rgba(26, 26, 26, 0.65) 100%
+        ),
+        radial-gradient(ellipse 70% 60% at 60% 30%, rgba(255, 235, 200, 0.45) 0%, transparent 65%),
+        linear-gradient(135deg, #C8B89E 0%, #B8A48A 30%, #A89070 55%, #987C5C 80%, #8A6E50 100%);
+      z-index: 0;
+    }
+
+    /* Soft window-light highlight */
+    .hero-left::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 55%;
+      background: radial-gradient(ellipse 80% 70% at 55% 20%, rgba(255,245,230,0.4) 0%, transparent 70%);
+      z-index: 1;
+      pointer-events: none;
+    }
+
+    .hero-left-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* ── Animated text ──────────────────────────────────────────────────────── */
+
+    .eyebrow {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 1.25rem;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .eyebrow.visible { opacity: 1; }
+
+    .line { display: flex; flex-wrap: wrap; }
+
+    @keyframes rise {
+      from { transform: translateY(var(--rise-start)) translateX(var(--slide-start)); opacity: 0; }
+      to   { transform: translateY(0)                  translateX(var(--slide-start)); opacity: 1; }
+    }
+
+    @keyframes slide {
+      from { transform: translateY(0) translateX(var(--slide-start)); }
+      to   { transform: translateY(0) translateX(0); }
+    }
+
+    .char {
+      display: inline-block;
+      font-family: 'Barlow', Helvetica, sans-serif;
+      font-weight: 700;
+      font-size: clamp(2.2rem, 4vw, 3.5rem);
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+      color: var(--white);
+      opacity: 0;
+      transform: translateY(var(--rise-start)) translateX(var(--slide-start));
+      will-change: transform, opacity;
+    }
+
+    #line2 .char {
+      font-weight: 300;
+      font-style: italic;
+      color: rgba(255,255,255,0.75);
+    }
+
+    .char.rising  { animation: rise var(--dur1) cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+    .char.sliding { opacity: 1; transform: translateY(0) translateX(var(--slide-start)); animation: slide var(--dur2) cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+    .char.done    { opacity: 1; transform: translateY(0) translateX(0); }
+
+    .hero-body {
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity var(--body-fade) ease, transform var(--body-fade) ease;
+    }
+
+    .hero-body.visible { opacity: 1; transform: translateY(0); }
+
+    .hero-divider {
+      width: 36px;
+      height: 2px;
+      background: rgba(255,255,255,0.5);
+      margin: 1.25rem 0;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .hero-divider.visible { opacity: 1; }
+
+    .hero-body-text {
+      font-size: 0.975rem;
+      line-height: 1.65;
+      color: rgba(255,255,255,0.68);
+      font-weight: 300;
+      max-width: 44ch;
+    }
+
+    /* Trust badges below text */
+    .trust-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1.5rem;
+      margin-top: 2rem;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .trust-row.visible { opacity: 1; }
+
+    .trust-item {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.55);
+      font-weight: 400;
+    }
+
+    .trust-dot {
+      width: 5px;
+      height: 5px;
+      background: rgba(255,255,255,0.4);
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    /* ── Right: form card ───────────────────────────────────────────────────── */
+
+    .hero-right {
+      background: var(--white);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 3.5rem 3rem 3.5rem 3rem;
+      border-left: 1px solid var(--border);
+      overflow-y: auto;
+    }
+
+    .form-header {
+      margin-bottom: 2rem;
+    }
+
+    .form-tag {
+      font-size: 0.68rem;
+      font-weight: 600;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--blue);
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .form-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1.2;
+      letter-spacing: -0.01em;
+    }
+
+    .form-sub {
+      font-size: 0.85rem;
+      color: var(--text-light);
+      font-weight: 300;
+      margin-top: 0.4rem;
+      line-height: 1.5;
+    }
+
+    .form-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1.5rem 0;
+    }
+
+    /* ── Form fields ─────────────────────────────────────────────────────────── */
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.1rem 1.25rem;
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .field.full-width { grid-column: 1 / -1; }
+
+    label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-mid);
+    }
+
+    select, input, textarea {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 0;
+      color: var(--text);
+      font-family: 'Barlow', Helvetica, sans-serif;
+      font-size: 0.9rem;
+      font-weight: 400;
+      padding: 0.6rem 0.8rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: #C0C0C0;
+      font-weight: 300;
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23909090' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.8rem center;
+      padding-right: 2rem;
+      cursor: pointer;
+    }
+
+    select option { background: var(--white); color: var(--text); }
+    textarea { resize: none; height: 80px; line-height: 1.55; }
+
+    select:focus, input:focus, textarea:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 2px rgba(0,100,163,0.1);
+    }
+
+    .field.invalid select,
+    .field.invalid input,
+    .field.invalid textarea {
+      border-color: #C0392B;
+      box-shadow: 0 0 0 2px rgba(192,57,43,0.07);
+    }
+
+    .field.valid select,
+    .field.valid input,
+    .field.valid textarea {
+      border-color: #27AE60;
+    }
+
+    .err-msg {
+      font-size: 0.7rem;
+      color: #C0392B;
+      min-height: 0.85rem;
+    }
+
+    /* ── Submit ───────────────────────────────────────────────────────────────── */
+
+    .submit-row {
+      margin-top: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-submit {
+      flex-shrink: 0;
+      padding: 0.8rem 2rem;
+      background: var(--blue);
+      color: var(--white);
+      font-family: 'Barlow', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      letter-spacing: 0.025em;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-submit:hover { background: var(--blue-dark); }
+    .btn-submit:active { opacity: 0.9; }
+    .btn-submit:disabled { background: #ABABAB; cursor: not-allowed; }
+
+    .btn-spinner {
+      display: none;
+      width: 13px;
+      height: 13px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .btn-submit.loading .btn-spinner { display: block; }
+    .btn-submit.loading { padding-right: 2.5rem; }
+
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+    .status-msg {
+      font-size: 0.8rem;
+      min-height: 1rem;
+    }
+
+    .status-msg.ok  { color: #27AE60; }
+    .status-msg.err { color: #C0392B; }
+
+    /* ── Thin blue footer bar ─────────────────────────────────────────────────── */
+
+    .footer-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: var(--blue);
+      z-index: 100;
+    }
+
+    /* ── Responsive ───────────────────────────────────────────────────────────── */
+
+    @media (max-width: 800px) {
+      .hero {
+        grid-template-columns: 1fr;
+        min-height: auto;
+      }
+
+      .hero-left {
+        min-height: 55vw;
+        padding: 2.5rem 1.75rem;
+        justify-content: flex-end;
+      }
+
+      .hero-right {
+        border-left: none;
+        border-top: 1px solid var(--border);
+        padding: 2.5rem 1.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Hero: full viewport, left = photo+text, right = form -->
+  <main class="hero">
+
+    <!-- LEFT: photo background with animated text -->
+    <div class="hero-left">
+      <div class="hero-left-content" id="textReveal">
+
+        <p class="eyebrow" id="eyebrow">System status</p>
+
+        <div class="line" id="line1"></div>
+        <div class="line" id="line2"></div>
+
+        <div class="hero-divider" id="heroDivider"></div>
+
+        <div class="hero-body" id="heroBody">
+          <p class="hero-body-text">
+            All systems are operational and standing by for your next command. Personal, thoughtful service — ready when you are.
+          </p>
+        </div>
+
+        <div class="trust-row" id="trustRow">
+          <span class="trust-item"><span class="trust-dot"></span>Secure connection</span>
+          <span class="trust-item"><span class="trust-dot"></span>Real-time processing</span>
+          <span class="trust-item"><span class="trust-dot"></span>24 / 7 availability</span>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- RIGHT: form card -->
+    <div class="hero-right">
+      <div class="form-header">
+        <span class="form-tag">Request form</span>
+        <h1 class="form-title">Submit your request</h1>
+        <p class="form-sub">All fields are required. We'll process your submission right away.</p>
+      </div>
+
+      <div class="form-divider"></div>
+
+      <form id="mainForm" novalidate>
+        <div class="form-grid">
+
+          <div class="field" id="f-priority">
+            <label for="priority">Priority</label>
+            <select id="priority" name="priority">
+              <option value="">Select priority</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+            <span class="err-msg" id="e-priority" role="alert"></span>
+          </div>
+
+          <div class="field" id="f-status">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              <option value="">Select status</option>
+              <option value="pending">Pending</option>
+              <option value="active">Active</option>
+              <option value="done">Done</option>
+            </select>
+            <span class="err-msg" id="e-status" role="alert"></span>
+          </div>
+
+          <div class="field full-width" id="f-category">
+            <label for="category">Category</label>
+            <select id="category" name="category">
+              <option value="">Select category</option>
+              <option value="bug">Bug</option>
+              <option value="feature">Feature</option>
+              <option value="task">Task</option>
+            </select>
+            <span class="err-msg" id="e-category" role="alert"></span>
+          </div>
+
+          <div class="field" id="f-name">
+            <label for="name">Full name</label>
+            <input type="text" id="name" name="name" placeholder="Min. 2 characters" autocomplete="name" />
+            <span class="err-msg" id="e-name" role="alert"></span>
+          </div>
+
+          <div class="field" id="f-email">
+            <label for="email">Email address</label>
+            <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="email" />
+            <span class="err-msg" id="e-email" role="alert"></span>
+          </div>
+
+          <div class="field full-width" id="f-message">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" placeholder="Min. 10 characters"></textarea>
+            <span class="err-msg" id="e-message" role="alert"></span>
+          </div>
+
+        </div>
+
+        <div class="submit-row">
+          <button type="submit" class="btn-submit" id="submitBtn">
+            Send request
+            <span class="btn-spinner" aria-hidden="true"></span>
+          </button>
+          <span class="status-msg" id="statusMsg" role="status"></span>
+        </div>
+      </form>
+    </div>
+
+  </main>
+
+  <div class="footer-bar" aria-hidden="true"></div>
+
+  <script>
+    // ── Animated text ───────────────────────────────────────────────────────────
+
+    const STAGGER  = 55, STAGGER2 = 18,
+          RISE_MS  = 550, SLIDE_MS = 440, GAP_MS = 55,
+          BODY_MS  = 140;
+
+    const dur = (len, s, d) => (len - 1) * s + d;
+
+    function animateLine(el, text, onDone) {
+      text.split('').forEach(ch => {
+        const s = document.createElement('span');
+        s.className = 'char';
+        s.textContent = ch === ' ' ? ' ' : ch;
+        el.appendChild(s);
+      });
+
+      const spans = [...el.querySelectorAll('.char')];
+
+      function rise() {
+        spans.forEach((s, i) => { s.style.animationDelay = `${i * STAGGER}ms`; s.classList.add('rising'); });
+        setTimeout(slide, dur(spans.length, STAGGER, RISE_MS) + GAP_MS);
+      }
+
+      function slide() {
+        spans.forEach(s => { s.style.animationDelay = ''; s.classList.remove('rising'); });
+        spans[0] && spans[0].offsetWidth;
+        spans.forEach((s, i) => { s.style.animationDelay = `${i * STAGGER2}ms`; s.classList.add('sliding'); });
+        setTimeout(() => {
+          spans.forEach(s => { s.style.animationDelay = ''; s.classList.remove('sliding'); s.classList.add('done'); });
+          onDone();
+        }, dur(spans.length, STAGGER2, SLIDE_MS));
+      }
+
+      return { start: rise };
+    }
+
+    (function init() {
+      const eyebrow = document.getElementById('eyebrow');
+      const divider = document.getElementById('heroDivider');
+      const body    = document.getElementById('heroBody');
+      const trust   = document.getElementById('trustRow');
+      let done = 0, started = false;
+
+      function onDone() {
+        if (++done < 2) return;
+        divider.classList.add('visible');
+        setTimeout(() => body.classList.add('visible'),  BODY_MS);
+        setTimeout(() => trust.classList.add('visible'), BODY_MS + 300);
+      }
+
+      function start() {
+        if (started) return;
+        started = true;
+        eyebrow.classList.add('visible');
+        setTimeout(() => {
+          animateLine(document.getElementById('line1'), 'System Online',   onDone).start();
+          animateLine(document.getElementById('line2'), 'Ready for input', onDone).start();
+        }, 150);
+      }
+
+      const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { start(); obs.disconnect(); } }, { threshold: 0 });
+      obs.observe(document.getElementById('textReveal'));
+      setTimeout(start, 350);
+    })();
+
+    // ── Validation ──────────────────────────────────────────────────────────────
+
+    const rules = {
+      priority: v => v           ? null : 'Please select a priority',
+      status:   v => v           ? null : 'Please select a status',
+      category: v => v           ? null : 'Please select a category',
+      name:     v => v.trim().length >= 2  ? null : 'At least 2 characters required',
+      email:    v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? null : 'Enter a valid email address',
+      message:  v => v.trim().length >= 10 ? null : 'At least 10 characters required',
+    };
+
+    function vf(name) {
+      const el = document.getElementById(name), w = document.getElementById('f-' + name), e = document.getElementById('e-' + name);
+      const err = rules[name](el.value);
+      w.classList.toggle('invalid', !!err); w.classList.toggle('valid', !err);
+      e.textContent = err || '';
+      return !err;
+    }
+
+    ['priority','status','category'].forEach(id => document.getElementById(id).addEventListener('change', () => vf(id)));
+    ['name','email','message'].forEach(id => document.getElementById(id).addEventListener('input', () => vf(id)));
+
+    // ── Submit ──────────────────────────────────────────────────────────────────
+
+    document.getElementById('mainForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!Object.keys(rules).map(vf).every(Boolean)) return;
+
+      const btn = document.getElementById('submitBtn'), st = document.getElementById('statusMsg');
+      const payload = Object.fromEntries(
+        ['priority','status','category','name','email','message'].map(id => [id, document.getElementById(id).value.trim()])
+      );
+
+      btn.disabled = true; btn.classList.add('loading');
+      st.textContent = ''; st.className = 'status-msg';
+
+      try {
+        const res = await fetch('https://httpbin.org/post', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        st.textContent = 'Request submitted successfully.'; st.classList.add('ok');
+        document.getElementById('mainForm').reset();
+        Object.keys(rules).forEach(id => { document.getElementById('f-'+id).classList.remove('valid','invalid'); document.getElementById('e-'+id).textContent = ''; });
+      } catch (err) {
+        st.textContent = 'Submission failed — ' + err.message; st.classList.add('err');
+      } finally {
+        btn.disabled = false; btn.classList.remove('loading');
+      }
+    });
+  </script>
+</body>
+</html>

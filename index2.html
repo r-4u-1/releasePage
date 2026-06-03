@@ -1,0 +1,881 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SYSTEM ONLINE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* Handelsbanken-inspired palette */
+      --navy:        #002B45;
+      --navy-mid:    #0A3D5C;
+      --green:       #005741;
+      --green-light: #007A5E;
+      --cream:       #F5F0E8;
+      --cream-dark:  #EDE7DB;
+      --white:       #FFFFFF;
+      --text:        #1A1A1A;
+      --text-mid:    #4A5568;
+      --text-light:  #8A95A0;
+      --border:      #D4CCBF;
+      --border-dark: #B8AFA4;
+      --bg:          #F7F4EF;
+
+      /* Animation timing */
+      --rise-start:  80px;
+      --slide-start: 60px;
+      --dur1:        600ms;
+      --dur2:        480ms;
+      --body-fade:   700ms;
+    }
+
+    html, body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', system-ui, sans-serif;
+      font-weight: 400;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Nav ──────────────────────────────────────────────────────────────────── */
+
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      height: 64px;
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 3rem;
+      gap: 2.5rem;
+    }
+
+    .nav-logo {
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 1rem;
+      letter-spacing: 0.04em;
+      color: var(--navy);
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .nav-logo span {
+      display: inline-block;
+      width: 28px;
+      height: 28px;
+      background: var(--green);
+      border-radius: 2px;
+      margin-right: 0.6rem;
+      vertical-align: middle;
+      position: relative;
+      top: -1px;
+    }
+
+    .nav-links {
+      display: flex;
+      gap: 2rem;
+      list-style: none;
+      margin-left: auto;
+    }
+
+    .nav-links a {
+      font-size: 0.875rem;
+      font-weight: 400;
+      color: var(--text-mid);
+      text-decoration: none;
+      letter-spacing: 0.01em;
+      transition: color 0.15s;
+    }
+
+    .nav-links a:hover { color: var(--navy); }
+
+    .nav-cta {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--white);
+      background: var(--green);
+      padding: 0.5rem 1.25rem;
+      border-radius: 2px;
+      text-decoration: none;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    .nav-cta:hover { background: var(--green-light); }
+
+    /* ── Hero ─────────────────────────────────────────────────────────────────── */
+
+    .hero {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 45% 55%;
+      padding-top: 64px; /* nav height */
+    }
+
+    /* Left panel — dark navy, contains the animated text */
+    .hero-panel {
+      background: var(--navy);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 5rem 4rem 5rem 3.5rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Subtle texture / depth lines */
+    .hero-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          transparent,
+          transparent 79px,
+          rgba(255,255,255,0.025) 80px
+        );
+      pointer-events: none;
+    }
+
+    /* Right side — warm cream with background image suggestion */
+    .hero-visual {
+      background:
+        linear-gradient(160deg, #E8DDD0 0%, #D4C8B8 40%, #C5B9A8 100%);
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: flex-end;
+    }
+
+    .hero-visual::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 60% 30%, rgba(255,255,255,0.35) 0%, transparent 65%),
+        radial-gradient(ellipse at 30% 80%, rgba(0,43,69,0.12) 0%, transparent 60%);
+    }
+
+    /* Abstract shape suggestion of a person / home */
+    .hero-visual-shape {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 70%;
+      height: 85%;
+      background:
+        linear-gradient(180deg, rgba(0,87,65,0.08) 0%, rgba(0,43,69,0.18) 100%);
+      border-radius: 50% 50% 0 0 / 30% 30% 0 0;
+      opacity: 0.4;
+    }
+
+    .hero-visual-quote {
+      position: relative;
+      z-index: 1;
+      padding: 2.5rem 3rem;
+      max-width: 480px;
+    }
+
+    .hero-visual-quote blockquote {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: clamp(1.35rem, 2.2vw, 1.9rem);
+      line-height: 1.45;
+      color: var(--navy);
+      font-style: italic;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: opacity 0.8s ease 1.8s, transform 0.8s ease 1.8s;
+    }
+
+    .hero-visual-quote blockquote.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .hero-visual-quote cite {
+      display: block;
+      margin-top: 1rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-style: normal;
+      font-weight: 500;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--green);
+      opacity: 0;
+      transition: opacity 0.6s ease 2.4s;
+    }
+
+    .hero-visual-quote cite.visible { opacity: 1; }
+
+    /* ── Animated text ──────────────────────────────────────────────────────── */
+
+    .text-reveal {
+      position: relative;
+      z-index: 1;
+    }
+
+    .eyebrow {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--green-light);
+      margin-bottom: 1.5rem;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .eyebrow.visible { opacity: 1; }
+
+    .line { display: flex; flex-wrap: wrap; }
+
+    @keyframes rise {
+      from { transform: translateY(var(--rise-start)) translateX(var(--slide-start)); opacity: 0; }
+      to   { transform: translateY(0px) translateX(var(--slide-start)); opacity: 1; }
+    }
+
+    @keyframes slide {
+      from { transform: translateY(0px) translateX(var(--slide-start)); }
+      to   { transform: translateY(0px) translateX(0px); }
+    }
+
+    .char {
+      display: inline-block;
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-weight: 400;
+      font-size: clamp(2.2rem, 4.5vw, 4rem);
+      line-height: 1.05;
+      letter-spacing: -0.01em;
+      color: var(--white);
+      opacity: 0;
+      transform: translateY(var(--rise-start)) translateX(var(--slide-start));
+      will-change: transform, opacity;
+    }
+
+    /* Second line in green-tinted italic for contrast */
+    #line2 .char {
+      color: #A8D4C8;
+      font-style: italic;
+    }
+
+    .char.rising  { animation: rise var(--dur1) cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+    .char.sliding { opacity: 1; transform: translateY(0px) translateX(var(--slide-start)); animation: slide var(--dur2) cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+    .char.done    { opacity: 1; transform: translateY(0px) translateX(0px); }
+
+    .body {
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity var(--body-fade) ease, transform var(--body-fade) ease;
+      margin-top: 1.75rem;
+    }
+
+    .body.body-visible { opacity: 1; transform: translateY(0); }
+
+    .body-text {
+      font-size: 0.975rem;
+      line-height: 1.7;
+      color: rgba(245, 240, 232, 0.65);
+      font-weight: 300;
+      max-width: 38ch;
+    }
+
+    /* Divider line */
+    .hero-divider {
+      width: 48px;
+      height: 2px;
+      background: var(--green-light);
+      margin: 1.5rem 0;
+      opacity: 0;
+      transition: opacity 0.5s ease;
+    }
+
+    .hero-divider.visible { opacity: 1; }
+
+    /* Hero CTA buttons */
+    .hero-actions {
+      display: flex;
+      gap: 0.875rem;
+      flex-wrap: wrap;
+      margin-top: 2.25rem;
+      opacity: 0;
+      transform: translateY(6px);
+      transition: opacity 0.5s ease, transform 0.5s ease;
+    }
+
+    .hero-actions.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .btn-primary {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      color: var(--white);
+      background: var(--green);
+      border: none;
+      border-radius: 2px;
+      padding: 0.8rem 1.75rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: background 0.15s;
+    }
+
+    .btn-primary:hover { background: var(--green-light); }
+
+    .btn-ghost {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 400;
+      letter-spacing: 0.03em;
+      color: rgba(245, 240, 232, 0.8);
+      background: transparent;
+      border: 1px solid rgba(245, 240, 232, 0.25);
+      border-radius: 2px;
+      padding: 0.8rem 1.75rem;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-block;
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-ghost:hover {
+      border-color: rgba(245, 240, 232, 0.6);
+      color: var(--cream);
+    }
+
+    /* ── Form section ─────────────────────────────────────────────────────────── */
+
+    .section {
+      background: var(--white);
+      padding: 5rem 3.5rem;
+    }
+
+    .section-inner {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .section-eyebrow {
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--green);
+      margin-bottom: 0.75rem;
+    }
+
+    .section-title {
+      font-family: 'DM Serif Display', Georgia, serif;
+      font-size: clamp(1.6rem, 3vw, 2.4rem);
+      font-weight: 400;
+      color: var(--navy);
+      line-height: 1.2;
+      margin-bottom: 2.75rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1.5rem 2rem;
+    }
+
+    @media (max-width: 680px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .hero { grid-template-columns: 1fr; }
+      .hero-visual { display: none; }
+      .hero-panel { padding: 4rem 2rem; }
+      .section { padding: 3.5rem 1.5rem; }
+      .nav { padding: 0 1.5rem; }
+      .nav-links { display: none; }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+
+    .field.full-width { grid-column: 1 / -1; }
+
+    label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      color: var(--text-mid);
+      text-transform: uppercase;
+    }
+
+    select, input, textarea {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 0.9375rem;
+      font-weight: 400;
+      padding: 0.7rem 0.875rem;
+      outline: none;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    input::placeholder, textarea::placeholder { color: var(--text-light); }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234A5568' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.875rem center;
+      padding-right: 2.25rem;
+      cursor: pointer;
+    }
+
+    select option { background: var(--white); color: var(--text); }
+
+    textarea { resize: vertical; min-height: 96px; line-height: 1.6; }
+
+    select:focus, input:focus, textarea:focus {
+      border-color: var(--navy);
+      box-shadow: 0 0 0 3px rgba(0, 43, 69, 0.07);
+    }
+
+    .field.invalid select,
+    .field.invalid input,
+    .field.invalid textarea {
+      border-color: #C0392B;
+      box-shadow: 0 0 0 3px rgba(192, 57, 43, 0.07);
+    }
+
+    .field.valid select,
+    .field.valid input,
+    .field.valid textarea {
+      border-color: var(--green);
+    }
+
+    .err-msg {
+      font-size: 0.72rem;
+      letter-spacing: 0.02em;
+      color: #C0392B;
+      min-height: 0.9rem;
+      font-weight: 400;
+    }
+
+    /* ── Submit row ───────────────────────────────────────────────────────────── */
+
+    .submit-row {
+      margin-top: 2.25rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      padding-top: 1.75rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .btn-submit {
+      font-family: 'Inter', sans-serif;
+      font-weight: 500;
+      font-size: 0.875rem;
+      letter-spacing: 0.04em;
+      color: var(--white);
+      background: var(--navy);
+      border: none;
+      border-radius: 2px;
+      padding: 0.85rem 2.25rem;
+      cursor: pointer;
+      transition: background 0.15s;
+      position: relative;
+      overflow: hidden;
+      white-space: nowrap;
+    }
+
+    .btn-submit:hover { background: var(--navy-mid); }
+    .btn-submit:active { transform: scale(0.99); }
+    .btn-submit:disabled { background: var(--text-light); cursor: not-allowed; }
+
+    .btn-spinner {
+      display: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: var(--white);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      position: absolute;
+      right: 0.875rem;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .btn-submit.loading .btn-spinner { display: block; }
+    .btn-submit.loading { padding-right: 2.75rem; }
+
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+    .status-msg {
+      font-size: 0.82rem;
+      letter-spacing: 0.02em;
+      min-height: 1rem;
+      font-weight: 400;
+    }
+
+    .status-msg.ok  { color: var(--green); }
+    .status-msg.err { color: #C0392B; }
+
+    /* ── Footer strip ─────────────────────────────────────────────────────────── */
+
+    .footer {
+      background: var(--navy);
+      padding: 2rem 3.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .footer-copy {
+      font-size: 0.75rem;
+      color: rgba(245,240,232,0.4);
+      letter-spacing: 0.04em;
+    }
+
+    .footer-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--green-light);
+      border-radius: 50%;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <div class="nav-logo"><span></span>Systemet</div>
+    <ul class="nav-links">
+      <li><a href="#">Overview</a></li>
+      <li><a href="#">Services</a></li>
+      <li><a href="#">Contact</a></li>
+    </ul>
+    <a href="#form" class="nav-cta">Get started</a>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero" id="hero">
+
+    <!-- Left: dark panel with animated text -->
+    <div class="hero-panel">
+      <div class="text-reveal" id="textReveal">
+
+        <div class="eyebrow" id="eyebrow">// Status report</div>
+
+        <div class="line" id="line1"></div>
+        <div class="line" id="line2"></div>
+
+        <div class="hero-divider" id="heroDivider"></div>
+
+        <div class="body" id="body">
+          <p class="body-text">All systems are operational and standing by for your next command.</p>
+        </div>
+
+        <div class="hero-actions" id="heroActions">
+          <a href="#form" class="btn-primary">Submit a request</a>
+          <a href="#" class="btn-ghost">Learn more</a>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Right: visual / quote panel -->
+    <div class="hero-visual">
+      <div class="hero-visual-shape"></div>
+      <div class="hero-visual-quote">
+        <blockquote id="heroQuote">
+          "A system built on clarity, trust, and precision — ready when you are."
+        </blockquote>
+        <cite id="heroCite">Ready for input</cite>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- Form section -->
+  <section class="section" id="form">
+    <div class="section-inner">
+      <p class="section-eyebrow">// Input parameters</p>
+      <h2 class="section-title">Submit your request</h2>
+
+      <form id="mainForm" novalidate>
+        <div class="form-grid">
+
+          <div class="field" id="f-priority">
+            <label for="priority">Priority</label>
+            <select id="priority" name="priority">
+              <option value="">Select priority</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+            <span class="err-msg" id="e-priority"></span>
+          </div>
+
+          <div class="field" id="f-status">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              <option value="">Select status</option>
+              <option value="pending">Pending</option>
+              <option value="active">Active</option>
+              <option value="done">Done</option>
+            </select>
+            <span class="err-msg" id="e-status"></span>
+          </div>
+
+          <div class="field" id="f-category">
+            <label for="category">Category</label>
+            <select id="category" name="category">
+              <option value="">Select category</option>
+              <option value="bug">Bug</option>
+              <option value="feature">Feature</option>
+              <option value="task">Task</option>
+            </select>
+            <span class="err-msg" id="e-category"></span>
+          </div>
+
+          <div class="field" id="f-name">
+            <label for="name">Full name</label>
+            <input type="text" id="name" name="name" placeholder="Min. 2 characters" />
+            <span class="err-msg" id="e-name"></span>
+          </div>
+
+          <div class="field" id="f-email">
+            <label for="email">Email address</label>
+            <input type="email" id="email" name="email" placeholder="you@example.com" />
+            <span class="err-msg" id="e-email"></span>
+          </div>
+
+          <div class="field full-width" id="f-message">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" placeholder="Describe your request — minimum 10 characters"></textarea>
+            <span class="err-msg" id="e-message"></span>
+          </div>
+
+        </div>
+
+        <div class="submit-row">
+          <button type="submit" class="btn-submit" id="submitBtn">
+            Send request
+            <span class="btn-spinner"></span>
+          </button>
+          <span class="status-msg" id="statusMsg"></span>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <span class="footer-copy">© 2026 Systemet. All rights reserved.</span>
+    <div class="footer-dot"></div>
+    <span class="footer-copy">Secure connection established.</span>
+  </footer>
+
+  <script>
+    // ── Animated text engine ────────────────────────────────────────────────────
+
+    const STAGGER       = 60;
+    const STAGGER2      = 22;
+    const RISE_MS       = 600;
+    const SLIDE_MS      = 480;
+    const GAP_MS        = 60;
+    const BODY_DELAY_MS = 150;
+
+    function phaseDuration(len, stagger, duration) {
+      return (len - 1) * stagger + duration;
+    }
+
+    function animateLine(containerEl, text, onDone) {
+      text.split('').forEach(ch => {
+        const span = document.createElement('span');
+        span.className = 'char';
+        span.textContent = ch === ' ' ? ' ' : ch;
+        containerEl.appendChild(span);
+      });
+
+      const spans = [...containerEl.querySelectorAll('.char')];
+
+      function startRising() {
+        spans.forEach((s, i) => {
+          s.style.animationDelay = `${i * STAGGER}ms`;
+          s.classList.add('rising');
+        });
+        setTimeout(startSliding, phaseDuration(spans.length, STAGGER, RISE_MS) + GAP_MS);
+      }
+
+      function startSliding() {
+        spans.forEach(s => { s.style.animationDelay = ''; s.classList.remove('rising'); });
+        spans[0] && spans[0].offsetWidth;
+        spans.forEach((s, i) => { s.style.animationDelay = `${i * STAGGER2}ms`; s.classList.add('sliding'); });
+        setTimeout(() => {
+          spans.forEach(s => {
+            s.style.animationDelay = '';
+            s.classList.remove('sliding');
+            s.classList.add('done');
+          });
+          onDone();
+        }, phaseDuration(spans.length, STAGGER2, SLIDE_MS));
+      }
+
+      return { start: startRising };
+    }
+
+    function initTextReveal() {
+      const root   = document.getElementById('textReveal');
+      const body   = document.getElementById('body');
+      const eyebrow = document.getElementById('eyebrow');
+      const divider = document.getElementById('heroDivider');
+      const actions = document.getElementById('heroActions');
+      const quote   = document.getElementById('heroQuote');
+      const cite    = document.getElementById('heroCite');
+      let done = 0;
+
+      function onLineDone() {
+        done++;
+        if (done === 2) {
+          divider.classList.add('visible');
+          setTimeout(() => body.classList.add('body-visible'), BODY_DELAY_MS);
+          setTimeout(() => actions.classList.add('visible'),   BODY_DELAY_MS + 300);
+          setTimeout(() => quote.classList.add('visible'),     400);
+          setTimeout(() => cite.classList.add('visible'),      400);
+        }
+      }
+
+      const a1 = animateLine(document.getElementById('line1'), 'System Online',   onLineDone);
+      const a2 = animateLine(document.getElementById('line2'), 'Ready for input', onLineDone);
+
+      function kick() {
+        eyebrow.classList.add('visible');
+        setTimeout(() => { a1.start(); a2.start(); }, 200);
+      }
+
+      const observer = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) {
+          kick();
+          observer.disconnect();
+        }
+      }, { threshold: 0 });
+
+      observer.observe(root);
+      // Fallback: start after 300ms if observer never fires (e.g. in iframes)
+      setTimeout(() => { if (root.querySelectorAll('.char.done, .char.rising').length === 0) kick(); }, 300);
+    }
+
+    // ── Validation ──────────────────────────────────────────────────────────────
+
+    const rules = {
+      priority: v => v            ? null : 'Please select a priority',
+      status:   v => v            ? null : 'Please select a status',
+      category: v => v            ? null : 'Please select a category',
+      name:     v => v.trim().length >= 2  ? null : 'Name must be at least 2 characters',
+      email:    v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? null : 'Enter a valid email address',
+      message:  v => v.trim().length >= 10 ? null : 'Message must be at least 10 characters',
+    };
+
+    function validateField(name) {
+      const el    = document.getElementById(name);
+      const wrap  = document.getElementById('f-' + name);
+      const errEl = document.getElementById('e-' + name);
+      const error = rules[name](el.value);
+      wrap.classList.toggle('invalid', !!error);
+      wrap.classList.toggle('valid',   !error);
+      errEl.textContent = error || '';
+      return !error;
+    }
+
+    function validateAll() {
+      return Object.keys(rules).map(validateField).every(Boolean);
+    }
+
+    ['priority', 'status', 'category'].forEach(id =>
+      document.getElementById(id).addEventListener('change', () => validateField(id))
+    );
+    ['name', 'email', 'message'].forEach(id =>
+      document.getElementById(id).addEventListener('input', () => validateField(id))
+    );
+
+    // ── Submit ──────────────────────────────────────────────────────────────────
+
+    document.getElementById('mainForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!validateAll()) return;
+
+      const btn    = document.getElementById('submitBtn');
+      const status = document.getElementById('statusMsg');
+
+      const payload = {
+        priority: document.getElementById('priority').value,
+        status:   document.getElementById('status').value,
+        category: document.getElementById('category').value,
+        name:     document.getElementById('name').value.trim(),
+        email:    document.getElementById('email').value.trim(),
+        message:  document.getElementById('message').value.trim(),
+      };
+
+      btn.disabled = true;
+      btn.classList.add('loading');
+      status.textContent = '';
+      status.className = 'status-msg';
+
+      try {
+        const res = await fetch('https://httpbin.org/post', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(payload),
+        });
+
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+
+        status.textContent = 'Request submitted successfully.';
+        status.classList.add('ok');
+
+        document.getElementById('mainForm').reset();
+        Object.keys(rules).forEach(id => {
+          document.getElementById('f-' + id).classList.remove('valid', 'invalid');
+          document.getElementById('e-' + id).textContent = '';
+        });
+
+      } catch (err) {
+        status.textContent = 'Submission failed — ' + err.message;
+        status.classList.add('err');
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('loading');
+      }
+    });
+
+    // ── Boot ────────────────────────────────────────────────────────────────────
+    initTextReveal();
+  </script>
+</body>
+</html>

@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SYSTEM ONLINE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@700;900&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --rise-start: 100px;
+      --slide-start: 100px;
+      --dur1: 500ms;
+      --dur2: 420ms;
+      --body-fade: 600ms;
+
+      --bg:         #030a0f;
+      --panel-bg:   #060f18;
+      --border:     #0d2235;
+      --accent:     #00d4ff;
+      --accent-dim: #005f73;
+      --text:       #c8e6f0;
+      --text-dim:   #4a7a8a;
+      --error:      #ff4466;
+      --success:    #00ff99;
+    }
+
+    html, body {
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+    }
+
+    /* ── Scene / layout ─────────────────────────────────────────────────────── */
+
+    .scene {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 1.5rem;
+      overflow: hidden;
+      gap: 3.5rem;
+    }
+
+    /* ── Animated text ──────────────────────────────────────────────────────── */
+
+    .text-reveal { width: 100%; max-width: 720px; }
+
+    .line { display: flex; flex-wrap: wrap; }
+
+    @keyframes rise {
+      from { transform: translateY(var(--rise-start)) translateX(var(--slide-start)); opacity: 0; }
+      to   { transform: translateY(0px) translateX(var(--slide-start)); opacity: 1; }
+    }
+
+    @keyframes slide {
+      from { transform: translateY(0px) translateX(var(--slide-start)); }
+      to   { transform: translateY(0px) translateX(0px); }
+    }
+
+    .char {
+      display: inline-block;
+      font-family: 'Orbitron', monospace;
+      font-weight: 900;
+      font-size: clamp(1.8rem, 5vw, 4rem);
+      letter-spacing: 0.05em;
+      opacity: 0;
+      transform: translateY(var(--rise-start)) translateX(var(--slide-start));
+      will-change: transform, opacity;
+      color: var(--accent);
+      text-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+    }
+
+    .char.rising  { animation: rise var(--dur1) cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+    .char.sliding { opacity: 1; transform: translateY(0px) translateX(var(--slide-start)); animation: slide var(--dur2) cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards; }
+    .char.done    { opacity: 1; transform: translateY(0px) translateX(0px); }
+
+    .body {
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity var(--body-fade) ease, transform var(--body-fade) ease;
+      margin-top: 0.75rem;
+    }
+
+    .body.body-visible { opacity: 1; transform: translateY(0); }
+
+    .body-text {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 1rem;
+      line-height: 1.6;
+      letter-spacing: 0.02em;
+      color: var(--text-dim);
+    }
+
+    /* ── Form panel ─────────────────────────────────────────────────────────── */
+
+    .panel {
+      width: 100%;
+      max-width: 720px;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 2rem 2.5rem;
+      background: var(--panel-bg);
+      opacity: 0;
+      transform: translateY(12px);
+      transition: opacity 0.6s ease 0.2s, transform 0.6s ease 0.2s;
+    }
+
+    .panel.panel-visible { opacity: 1; transform: translateY(0); }
+
+    .panel-title {
+      font-family: 'Orbitron', monospace;
+      font-size: 0.7rem;
+      letter-spacing: 0.18em;
+      color: var(--accent-dim);
+      text-transform: uppercase;
+      margin-bottom: 1.75rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1.25rem 1.5rem;
+    }
+
+    @media (max-width: 600px) {
+      .form-grid { grid-template-columns: 1fr; }
+      .panel { padding: 1.5rem 1.25rem; }
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .field.full-width { grid-column: 1 / -1; }
+
+    label {
+      font-size: 0.65rem;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    select, input, textarea {
+      background: #040d14;
+      border: 1px solid var(--border);
+      border-radius: 2px;
+      color: var(--text);
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 0.9rem;
+      padding: 0.55rem 0.75rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      width: 100%;
+      appearance: none;
+      -webkit-appearance: none;
+    }
+
+    select {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23005f73' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      padding-right: 2rem;
+    }
+    select option { background: #040d14; }
+
+    textarea { resize: vertical; min-height: 90px; }
+
+    select:focus, input:focus, textarea:focus {
+      border-color: var(--accent-dim);
+      box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.08);
+    }
+
+    .field.invalid select,
+    .field.invalid input,
+    .field.invalid textarea {
+      border-color: var(--error);
+      box-shadow: 0 0 0 2px rgba(255, 68, 102, 0.1);
+    }
+
+    .field.valid select,
+    .field.valid input,
+    .field.valid textarea {
+      border-color: #00664d;
+    }
+
+    .err-msg {
+      font-size: 0.62rem;
+      letter-spacing: 0.08em;
+      color: var(--error);
+      min-height: 0.85rem;
+    }
+
+    /* ── Submit button ───────────────────────────────────────────────────────── */
+
+    .submit-row {
+      margin-top: 1.75rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+    }
+
+    .btn {
+      font-family: 'Orbitron', monospace;
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--bg);
+      background: var(--accent);
+      border: none;
+      border-radius: 2px;
+      padding: 0.75rem 2rem;
+      cursor: pointer;
+      transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn:hover { background: #33ddff; box-shadow: 0 0 20px rgba(0, 212, 255, 0.35); }
+    .btn:active { transform: scale(0.97); }
+    .btn:disabled { background: var(--accent-dim); cursor: not-allowed; opacity: 0.6; transform: none; box-shadow: none; }
+
+    .btn-spinner {
+      display: none;
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(3, 10, 15, 0.4);
+      border-top-color: var(--bg);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      position: absolute;
+      right: 0.75rem;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .btn.loading .btn-spinner { display: block; }
+    .btn.loading { padding-right: 2.5rem; }
+
+    @keyframes spin { to { transform: translateY(-50%) rotate(360deg); } }
+
+    .status-msg {
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      min-height: 1rem;
+    }
+
+    .status-msg.ok  { color: var(--success); }
+    .status-msg.err { color: var(--error); }
+  </style>
+</head>
+<body>
+  <div class="scene">
+
+    <!-- Animated heading -->
+    <div class="text-reveal" id="textReveal">
+      <div class="line" id="line1"></div>
+      <div class="line" id="line2"></div>
+      <div class="body" id="body">
+        <p class="body-text">All systems are operational and standing by for your next command.</p>
+      </div>
+    </div>
+
+    <!-- Form panel -->
+    <div class="panel" id="formPanel">
+      <div class="panel-title">// INPUT PARAMETERS</div>
+
+      <form id="mainForm" novalidate>
+        <div class="form-grid">
+
+          <!-- Dropdowns -->
+          <div class="field" id="f-priority">
+            <label for="priority">Priority</label>
+            <select id="priority" name="priority">
+              <option value="">-- select --</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+            </select>
+            <span class="err-msg" id="e-priority"></span>
+          </div>
+
+          <div class="field" id="f-status">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              <option value="">-- select --</option>
+              <option value="pending">Pending</option>
+              <option value="active">Active</option>
+              <option value="done">Done</option>
+            </select>
+            <span class="err-msg" id="e-status"></span>
+          </div>
+
+          <div class="field" id="f-category">
+            <label for="category">Category</label>
+            <select id="category" name="category">
+              <option value="">-- select --</option>
+              <option value="bug">Bug</option>
+              <option value="feature">Feature</option>
+              <option value="task">Task</option>
+            </select>
+            <span class="err-msg" id="e-category"></span>
+          </div>
+
+          <!-- Input fields -->
+          <div class="field" id="f-name">
+            <label for="name">Name</label>
+            <input type="text" id="name" name="name" placeholder="Min. 2 characters" />
+            <span class="err-msg" id="e-name"></span>
+          </div>
+
+          <div class="field" id="f-email">
+            <label for="email">Email</label>
+            <input type="email" id="email" name="email" placeholder="user@example.com" />
+            <span class="err-msg" id="e-email"></span>
+          </div>
+
+          <div class="field full-width" id="f-message">
+            <label for="message">Message</label>
+            <textarea id="message" name="message" placeholder="Min. 10 characters"></textarea>
+            <span class="err-msg" id="e-message"></span>
+          </div>
+
+        </div>
+
+        <div class="submit-row">
+          <button type="submit" class="btn" id="submitBtn">
+            Transmit
+            <span class="btn-spinner"></span>
+          </button>
+          <span class="status-msg" id="statusMsg"></span>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+  <script>
+    // ── Animated text engine ────────────────────────────────────────────────────
+
+    const STAGGER       = 55;
+    const STAGGER2      = 20;
+    const RISE_MS       = 500;
+    const SLIDE_MS      = 420;
+    const GAP_MS        = 50;
+    const BODY_DELAY_MS = 120;
+
+    function phaseDuration(len, stagger, duration) {
+      return (len - 1) * stagger + duration;
+    }
+
+    function animateLine(containerEl, text, onDone) {
+      text.split('').forEach(ch => {
+        const span = document.createElement('span');
+        span.className = 'char';
+        span.textContent = ch === ' ' ? ' ' : ch;
+        containerEl.appendChild(span);
+      });
+
+      const spans = [...containerEl.querySelectorAll('.char')];
+
+      function startRising() {
+        spans.forEach((s, i) => {
+          s.style.animationDelay = `${i * STAGGER}ms`;
+          s.classList.add('rising');
+        });
+
+        const dur = phaseDuration(spans.length, STAGGER, RISE_MS) + GAP_MS;
+        setTimeout(startSliding, dur);
+      }
+
+      function startSliding() {
+        spans.forEach(s => {
+          s.style.animationDelay = '';
+          s.classList.remove('rising');
+        });
+
+        spans[0] && spans[0].offsetWidth; // force reflow
+
+        spans.forEach((s, i) => {
+          s.style.animationDelay = `${i * STAGGER2}ms`;
+          s.classList.add('sliding');
+        });
+
+        const dur = phaseDuration(spans.length, STAGGER2, SLIDE_MS);
+        setTimeout(() => {
+          spans.forEach(s => {
+            s.style.animationDelay = '';
+            s.classList.remove('sliding');
+            s.classList.add('done');
+          });
+          onDone();
+        }, dur);
+      }
+
+      return { start: startRising };
+    }
+
+    function initTextReveal() {
+      const root  = document.getElementById('textReveal');
+      const body  = document.getElementById('body');
+      let done    = 0;
+
+      function onLineDone() {
+        done++;
+        if (done === 2) {
+          setTimeout(() => body.classList.add('body-visible'), BODY_DELAY_MS);
+          setTimeout(() => document.getElementById('formPanel').classList.add('panel-visible'), BODY_DELAY_MS + 500);
+        }
+      }
+
+      const a1 = animateLine(document.getElementById('line1'), 'SYSTEM ONLINE',   onLineDone);
+      const a2 = animateLine(document.getElementById('line2'), 'READY FOR INPUT', onLineDone);
+
+      const observer = new IntersectionObserver(([entry]) => {
+        if (entry.isIntersecting) {
+          a1.start();
+          a2.start();
+          observer.disconnect();
+        }
+      }, { threshold: 0.3 });
+
+      observer.observe(root);
+    }
+
+    // ── Validation ──────────────────────────────────────────────────────────────
+
+    const rules = {
+      priority: v => v            ? null : 'Select a priority',
+      status:   v => v            ? null : 'Select a status',
+      category: v => v            ? null : 'Select a category',
+      name:     v => v.trim().length >= 2                       ? null : 'Name must be at least 2 characters',
+      email:    v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim()) ? null : 'Enter a valid email address',
+      message:  v => v.trim().length >= 10                      ? null : 'Message must be at least 10 characters',
+    };
+
+    function validateField(name) {
+      const el    = document.getElementById(name);
+      const wrap  = document.getElementById('f-' + name);
+      const errEl = document.getElementById('e-' + name);
+      const error = rules[name](el.value);
+      wrap.classList.toggle('invalid', !!error);
+      wrap.classList.toggle('valid',   !error);
+      errEl.textContent = error || '';
+      return !error;
+    }
+
+    function validateAll() {
+      return Object.keys(rules).map(validateField).every(Boolean);
+    }
+
+    ['priority', 'status', 'category'].forEach(id =>
+      document.getElementById(id).addEventListener('change', () => validateField(id))
+    );
+    ['name', 'email', 'message'].forEach(id =>
+      document.getElementById(id).addEventListener('input', () => validateField(id))
+    );
+
+    // ── Submit ──────────────────────────────────────────────────────────────────
+
+    document.getElementById('mainForm').addEventListener('submit', async e => {
+      e.preventDefault();
+      if (!validateAll()) return;
+
+      const btn    = document.getElementById('submitBtn');
+      const status = document.getElementById('statusMsg');
+
+      const payload = {
+        priority: document.getElementById('priority').value,
+        status:   document.getElementById('status').value,
+        category: document.getElementById('category').value,
+        name:     document.getElementById('name').value.trim(),
+        email:    document.getElementById('email').value.trim(),
+        message:  document.getElementById('message').value.trim(),
+      };
+
+      btn.disabled = true;
+      btn.classList.add('loading');
+      status.textContent = '';
+      status.className = 'status-msg';
+
+      try {
+        const res = await fetch('https://httpbin.org/post', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify(payload),
+        });
+
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+
+        status.textContent = '// TRANSMISSION SUCCESSFUL';
+        status.classList.add('ok');
+
+        document.getElementById('mainForm').reset();
+        Object.keys(rules).forEach(id => {
+          document.getElementById('f-' + id).classList.remove('valid', 'invalid');
+          document.getElementById('e-' + id).textContent = '';
+        });
+
+      } catch (err) {
+        status.textContent = '// ERROR: ' + err.message;
+        status.classList.add('err');
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('loading');
+      }
+    });
+
+    // ── Boot ────────────────────────────────────────────────────────────────────
+    initTextReveal();
+  </script>
+</body>
+</html>
