@@ -12,33 +12,31 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      /* ── Sith palette ── */
-      --sith-black:   #000000;
-      --sith-void:    #060004;
-      --sith-dark:    #0D0006;
-      --sith-red:     #C0001A;
-      --sith-red-mid: #8B0011;
-      --sith-red-hot: #FF1A2E;
-      --sith-red-dim: #520010;
-      --sith-ember:   #FF3300;
-      --sith-glow:    rgba(192,0,26,0.18);
+      /* Aurora palette */
+      --violet:       #6E31D4;
+      --violet-mid:   #8B4CF7;
+      --azure:        #0077FF;
+      --teal:         #00C4B0;
+      --teal-bright:  #00E5CC;
+      --midnight:     #050C1E;
+      --midnight-mid: #0A1530;
 
-      /* Form accents — red-based */
-      --accent:       #B5001A;
-      --accent-dark:  #7A0012;
-      --accent-glow:  rgba(192,0,26,0.14);
+      /* Form palette */
+      --accent:       #00A896;
+      --accent-dark:  #007A6D;
+      --accent-glow:  rgba(0,196,176,0.18);
 
       --text:         #141414;
       --text-mid:     #484848;
       --text-light:   #8A8A8A;
       --text-xlight:  #BABABA;
       --white:        #FFFFFF;
-      --off-white:    #F9F7F7;
-      --border:       #E4E0E0;
-      --border-hover: #D0C8C8;
+      --off-white:    #F7F8FC;
+      --border:       #E2E4EC;
+      --border-hover: #C8CADE;
 
-      --err:          #CC1A00;
-      --err-tint:     #FFF0EE;
+      --red:          #E03B2F;
+      --red-tint:     #FEF0EF;
 
       --rise-start:   65px;
       --slide-start:  48px;
@@ -46,13 +44,13 @@
       --dur2:         460ms;
       --body-fade:    640ms;
 
-      --shadow-card:  0 2px 8px rgba(0,0,0,0.1), 0 12px 36px rgba(0,0,0,0.15);
-      --shadow-btn:   0 6px 28px rgba(192,0,26,0.55);
+      --shadow-card:  0 2px 8px rgba(5,12,30,0.06), 0 12px 36px rgba(5,12,30,0.1);
+      --shadow-btn:   0 6px 24px rgba(0,196,176,0.4);
     }
 
     html, body {
       height: 100%;
-      background: #000000;
+      background: var(--off-white);
       color: var(--text);
       font-family: 'DM Sans', system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
@@ -80,7 +78,7 @@
       flex-direction: column;
       justify-content: flex-end;
       padding: 3.75rem 3.75rem 3.75rem 4rem;
-      background: var(--sith-black);
+      background: var(--midnight);
     }
 
     /* ── Aurora orbs (animated blurred gradient blobs) ─────────────────────── */
@@ -99,43 +97,43 @@
       will-change: transform;
     }
 
-    /* Blood red — top-left, dominant */
+    /* Violet — top-left */
     .orb-1 {
-      width: 75%;
-      height: 68%;
-      top: -20%;
-      left: -14%;
-      background: radial-gradient(circle, rgba(180,0,20,0.9) 0%, transparent 70%);
+      width: 72%;
+      height: 65%;
+      top: -18%;
+      left: -12%;
+      background: radial-gradient(circle, rgba(110,49,212,0.85) 0%, transparent 70%);
       animation: drift1 16s ease-in-out infinite;
     }
 
-    /* Deep crimson — top-right */
+    /* Azure — top-right */
     .orb-2 {
-      width: 60%;
-      height: 60%;
-      top: -10%;
-      right: -18%;
-      background: radial-gradient(circle, rgba(130,0,12,0.75) 0%, transparent 70%);
+      width: 62%;
+      height: 62%;
+      top: -12%;
+      right: -16%;
+      background: radial-gradient(circle, rgba(0,119,255,0.75) 0%, transparent 70%);
       animation: drift2 20s ease-in-out infinite;
     }
 
-    /* Ember orange-red — bottom-center */
+    /* Teal — bottom-center */
     .orb-3 {
-      width: 65%;
-      height: 52%;
-      bottom: -16%;
-      left: 14%;
-      background: radial-gradient(circle, rgba(200,20,0,0.55) 0%, transparent 70%);
+      width: 70%;
+      height: 55%;
+      bottom: -18%;
+      left: 12%;
+      background: radial-gradient(circle, rgba(0,229,204,0.55) 0%, transparent 70%);
       animation: drift3 24s ease-in-out infinite;
     }
 
-    /* Hot red spark — mid */
+    /* Violet accent — mid-right */
     .orb-4 {
-      width: 42%;
-      height: 42%;
-      top: 38%;
-      right: -6%;
-      background: radial-gradient(circle, rgba(255,20,40,0.35) 0%, transparent 70%);
+      width: 45%;
+      height: 45%;
+      top: 35%;
+      right: -8%;
+      background: radial-gradient(circle, rgba(139,76,247,0.45) 0%, transparent 70%);
       animation: drift4 18s ease-in-out infinite;
     }
 
@@ -168,10 +166,10 @@
       z-index: 1;
       background: linear-gradient(
         0deg,
-        rgba(0,0,0,0.92)   0%,
-        rgba(0,0,0,0.6)    35%,
-        rgba(0,0,0,0.18)   60%,
-        rgba(0,0,0,0.04)   100%
+        rgba(5,12,30,0.88)  0%,
+        rgba(5,12,30,0.55)  35%,
+        rgba(5,12,30,0.15)  60%,
+        rgba(5,12,30,0.05)  100%
       );
       pointer-events: none;
     }
@@ -201,12 +199,11 @@
       display: block;
       width: 32px;
       height: 2px;
-      background: linear-gradient(90deg, var(--sith-red-mid), var(--sith-red-hot));
+      background: linear-gradient(90deg, var(--violet-mid), var(--teal-bright));
       margin-bottom: 1.1rem;
       opacity: 0;
       transition: opacity 0.6s ease 0.1s;
       border-radius: 2px;
-      box-shadow: 0 0 8px rgba(192,0,26,0.8);
     }
 
     .hero-left-content.revealed::before { opacity: 1; }
@@ -218,35 +215,13 @@
       font-weight: 500;
       letter-spacing: 0.28em;
       text-transform: uppercase;
-      color: rgba(220,30,50,0.85);
+      color: rgba(0,229,204,0.75);
       margin-bottom: 1rem;
       opacity: 0;
       transition: opacity 0.5s ease;
-      text-shadow: 0 0 12px rgba(255,0,30,0.5);
     }
 
     .eyebrow.visible { opacity: 1; }
-
-    /* ══════════════════════════════════════════════════════════════════════════
-       SITH FIGURE
-    ══════════════════════════════════════════════════════════════════════════ */
-
-    .sith-wrap {
-      position: absolute;
-      z-index: 2;
-      top: 3%;
-      bottom: 30%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: clamp(64px, 11%, 88px);
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 2s ease;
-    }
-
-    .sith-wrap.visible { opacity: 1; }
-
-    .sith-wrap svg { width: 100%; height: 100%; display: block; }
 
     /* ══════════════════════════════════════════════════════════════════════════
        ANIMATED TEXT — ENGINE PRESERVED
@@ -276,18 +251,18 @@
       transform: translateY(var(--rise-start)) translateX(var(--slide-start));
       will-change: transform, opacity;
       text-shadow:
-        0 0 40px rgba(220, 0, 20, 0.55),
-        0 0 90px rgba(180, 0, 10, 0.3);
+        0 0 60px rgba(139, 76, 247, 0.35),
+        0 0 120px rgba(0, 119, 255, 0.2);
     }
 
     #line2 .char {
       font-weight: 400;
       font-style: italic;
-      color: rgba(255,180,180,0.72);
+      color: rgba(255,255,255,0.72);
       font-size: clamp(2rem, 3.5vw, 3.25rem);
       text-shadow:
-        0 0 40px rgba(200, 0, 15, 0.4),
-        0 0 80px rgba(150, 0, 10, 0.2);
+        0 0 50px rgba(0, 196, 176, 0.3),
+        0 0 100px rgba(0, 229, 204, 0.15);
     }
 
     .char.rising  { animation: rise var(--dur1) cubic-bezier(0.22, 1, 0.36, 1) forwards; }
@@ -312,9 +287,8 @@
       display: block;
       width: 40px;
       height: 1px;
-      background: linear-gradient(90deg, var(--sith-red), var(--sith-red-hot));
+      background: linear-gradient(90deg, var(--violet-mid), var(--teal));
       opacity: 0.7;
-      box-shadow: 0 0 6px rgba(192,0,26,0.6);
     }
 
     /* ── Hero body ─────────────────────────────────────────────────────────── */
@@ -331,7 +305,7 @@
       font-size: 0.9375rem;
       font-weight: 300;
       line-height: 1.72;
-      color: rgba(255,210,210,0.72);
+      color: rgba(255,255,255,0.55);
       max-width: 38ch;
       letter-spacing: 0.015em;
     }
@@ -344,7 +318,7 @@
       gap: 0.4rem 1.75rem;
       margin-top: 2.25rem;
       padding-top: 1.5rem;
-      border-top: 1px solid rgba(192,0,26,0.18);
+      border-top: 1px solid rgba(255,255,255,0.08);
       opacity: 0;
       transform: translateY(5px);
       transition: opacity 0.55s ease, transform 0.55s ease;
@@ -358,7 +332,7 @@
       gap: 0.5rem;
       font-size: 0.68rem;
       font-weight: 400;
-      color: rgba(255,180,180,0.65);
+      color: rgba(255,255,255,0.4);
       letter-spacing: 0.03em;
     }
 
@@ -366,8 +340,8 @@
       width: 14px;
       height: 14px;
       border-radius: 50%;
-      border: 1px solid rgba(192,0,26,0.4);
-      background: rgba(192,0,26,0.08);
+      border: 1px solid rgba(0,229,204,0.3);
+      background: rgba(0,229,204,0.06);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -381,7 +355,7 @@
     ══════════════════════════════════════════════════════════════════════════ */
 
     .hero-right {
-      background: #070003;
+      background: var(--off-white);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -397,8 +371,8 @@
       width: 1px;
       background: linear-gradient(180deg,
         transparent 0%,
-        rgba(192,0,26,0.5) 30%,
-        rgba(255,20,40,0.4) 70%,
+        rgba(110,49,212,0.4) 30%,
+        rgba(0,196,176,0.5) 70%,
         transparent 100%
       );
     }
@@ -408,11 +382,11 @@
     ══════════════════════════════════════════════════════════════════════════ */
 
     .form-card {
-      background: #0E0007;
-      border: 1px solid rgba(192,0,26,0.22);
+      background: var(--white);
+      border: 1px solid var(--border);
       border-radius: 4px;
       padding: 2.25rem 2.25rem 2rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.4), 0 12px 36px rgba(0,0,0,0.55), 0 0 60px rgba(160,0,15,0.08);
+      box-shadow: var(--shadow-card);
       position: relative;
       overflow: hidden;
 
@@ -423,28 +397,27 @@
 
     @keyframes cardIn { to { opacity: 1; transform: translateY(0); } }
 
-    /* Gradient top border — Sith red */
+    /* Gradient top border */
     .form-card::before {
       content: '';
       position: absolute;
       top: 0; left: 0; right: 0;
       height: 2px;
       background: linear-gradient(90deg,
-        var(--sith-red-dim) 0%,
-        var(--sith-red)     40%,
-        var(--sith-red-hot) 70%,
-        var(--sith-ember)   100%
+        var(--violet) 0%,
+        var(--azure)  50%,
+        var(--teal-bright) 100%
       );
     }
 
-    /* Corner glow — smouldering red on dark */
+    /* Subtle corner glow */
     .form-card::after {
       content: '';
       position: absolute;
-      top: -30px; right: -30px;
-      width: 160px;
-      height: 160px;
-      background: radial-gradient(circle, rgba(192,0,26,0.18) 0%, rgba(120,0,10,0.08) 50%, transparent 70%);
+      top: -40px; right: -40px;
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(circle, rgba(0,196,176,0.07) 0%, transparent 70%);
       pointer-events: none;
     }
 
@@ -453,25 +426,23 @@
       font-weight: 600;
       letter-spacing: 0.24em;
       text-transform: uppercase;
-      color: #FF3A52;
+      color: var(--teal);
       display: block;
       margin-bottom: 0.55rem;
-      text-shadow: 0 0 10px rgba(220,0,30,0.5);
     }
 
     .form-title {
       font-family: 'Cormorant Garamond', Georgia, serif;
       font-size: 1.9rem;
       font-weight: 700;
-      color: #FFFFFF;
+      color: var(--text);
       line-height: 1.12;
       letter-spacing: -0.025em;
-      text-shadow: 0 0 30px rgba(200,0,20,0.25);
     }
 
     .form-sub {
       font-size: 0.8rem;
-      color: rgba(255,190,190,0.62);
+      color: var(--text-light);
       font-weight: 300;
       margin-top: 0.3rem;
       line-height: 1.55;
@@ -480,7 +451,7 @@
 
     .form-rule {
       height: 1px;
-      background: rgba(192,0,26,0.18);
+      background: var(--border);
       margin: 1.4rem 0 1.65rem;
     }
 
@@ -508,7 +479,7 @@
       font-family: 'DM Sans', sans-serif;
       font-size: 0.8125rem;
       font-weight: 400;
-      color: rgba(255,160,160,0.62);
+      color: var(--text-light);
       pointer-events: none;
       transition:
         top        0.18s cubic-bezier(0.22, 1, 0.36, 1),
@@ -526,20 +497,20 @@
       top: -0.52rem;
       font-size: 0.635rem;
       font-weight: 600;
-      color: rgba(220,50,70,0.95);
-      background: #0E0007;
+      color: var(--accent);
+      background: var(--white);
       letter-spacing: 0.05em;
     }
 
     .field.invalid:focus-within label,
-    .field.invalid.filled label { color: #FF5555; }
+    .field.invalid.filled label { color: var(--red); }
 
     select, input, textarea {
       width: 100%;
-      background: #160009;
-      border: 1px solid rgba(192,0,26,0.22);
+      background: var(--white);
+      border: 1px solid var(--border);
       border-radius: 3px;
-      color: rgba(255,220,220,0.92);
+      color: var(--text);
       font-family: 'DM Sans', sans-serif;
       font-size: 0.875rem;
       font-weight: 400;
@@ -555,31 +526,30 @@
 
     input::placeholder, textarea::placeholder { color: transparent; }
 
-    /* Light chevron for dark background */
     select {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(200%2C80%2C80%2C0.6)' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%238A8A8A' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 0.85rem center;
       padding-right: 2.25rem;
       cursor: pointer;
     }
 
-    select option { background: #1A0008; color: #FFD0D0; }
+    select option { background: var(--white); color: var(--text); }
     textarea { resize: none; height: 84px; line-height: 1.6; padding-top: 0.85rem; }
 
-    /* Focus — red ring on dark */
+    /* Focus */
     select:focus, input:focus, textarea:focus {
-      border-color: rgba(192,0,26,0.75);
-      box-shadow: 0 0 0 3px rgba(192,0,26,0.12), 0 0 16px rgba(192,0,26,0.08);
-      background: #1E000D;
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+      background: #FDFFFE;
     }
 
     /* Valid */
     .field.valid select,
     .field.valid input,
     .field.valid textarea {
-      border-color: rgba(192,0,26,0.6);
-      background: rgba(192,0,26,0.08);
+      border-color: var(--teal);
+      background: rgba(0,196,176,0.04);
     }
 
     .field.valid::after {
@@ -590,7 +560,7 @@
       transform: translateY(-50%);
       width: 16px;
       height: 16px;
-      background: var(--sith-red);
+      background: var(--teal);
       border-radius: 50%;
       background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6l2.5 2.5 4.5-5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
@@ -606,9 +576,9 @@
     .field.invalid select,
     .field.invalid input,
     .field.invalid textarea {
-      border-color: #FF3333;
-      background: rgba(255,0,0,0.06);
-      box-shadow: 0 0 0 3px rgba(255,0,0,0.08);
+      border-color: var(--red);
+      background: var(--red-tint);
+      box-shadow: 0 0 0 3px rgba(224,59,47,0.07);
     }
 
     .err-msg {
@@ -616,7 +586,7 @@
       bottom: -1.1rem;
       left: 0;
       font-size: 0.66rem;
-      color: #FF5555;
+      color: var(--red);
       font-weight: 400;
       opacity: 0;
       transform: translateY(-3px);
@@ -632,7 +602,7 @@
     .submit-row {
       margin-top: 0.4rem;
       padding-top: 1.4rem;
-      border-top: 1px solid rgba(192,0,26,0.18);
+      border-top: 1px solid var(--border);
       display: flex;
       align-items: center;
       gap: 1rem;
@@ -644,7 +614,7 @@
       overflow: hidden;
       flex-shrink: 0;
       padding: 0.8125rem 2.1rem;
-      background: linear-gradient(135deg, #0A0005 0%, #5C0010 55%, var(--sith-red) 100%);
+      background: linear-gradient(135deg, #0A1640 0%, #006B5F 60%, var(--teal) 100%);
       color: var(--white);
       font-family: 'DM Sans', sans-serif;
       font-size: 0.875rem;
@@ -717,8 +687,8 @@
       transition: opacity 0.25s ease;
     }
 
-    .status-msg.ok  { color: #FF6B6B; opacity: 1; }
-    .status-msg.err { color: #FF4444; opacity: 1; }
+    .status-msg.ok  { color: var(--accent); opacity: 1; }
+    .status-msg.err { color: var(--red);    opacity: 1; }
 
     /* ══════════════════════════════════════════════════════════════════════════
        FOOTER BAR — aurora gradient
@@ -729,45 +699,16 @@
       bottom: 0; left: 0; right: 0;
       height: 3px;
       background: linear-gradient(90deg,
-        var(--sith-red-dim),
-        var(--sith-red),
-        var(--sith-red-hot),
-        var(--sith-ember),
-        var(--sith-red),
-        var(--sith-red-dim)
+        var(--violet), var(--azure), var(--teal-bright)
       );
       background-size: 200% 100%;
-      animation: barShift 4s linear infinite;
+      animation: barShift 6s linear infinite;
       z-index: 200;
-      box-shadow: 0 0 12px rgba(192,0,26,0.7), 0 0 24px rgba(192,0,26,0.3);
     }
 
     @keyframes barShift {
       0%   { background-position: 0%   50%; }
       100% { background-position: 200% 50%; }
-    }
-
-    /* ══════════════════════════════════════════════════════════════════════════
-       HYPERSPEED INTRO OVERLAY
-    ══════════════════════════════════════════════════════════════════════════ */
-
-    #intro {
-      position: fixed;
-      inset: 0;
-      z-index: 9999;
-      background: #000000;
-      pointer-events: none;
-    }
-
-    #introCanvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    #intro.fading {
-      transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1);
-      opacity: 0;
     }
 
     /* ══════════════════════════════════════════════════════════════════════════
@@ -799,121 +740,6 @@
       <div class="aurora-vignette"  aria-hidden="true"></div>
       <div class="aurora-grain"     aria-hidden="true"></div>
 
-      <!-- Sith lord figure -->
-      <div class="sith-wrap" id="sithFigure" aria-hidden="true">
-        <svg viewBox="0 0 80 500" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
-          <defs>
-            <!-- Blade outer glow -->
-            <filter id="bg" x="-800%" y="-5%" width="1700%" height="110%">
-              <feGaussianBlur stdDeviation="9" result="b"/>
-              <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-            <!-- Blade tight glow -->
-            <filter id="bmid" x="-400%" y="-5%" width="900%" height="110%">
-              <feGaussianBlur stdDeviation="4" result="b"/>
-              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-            </filter>
-            <!-- Hilt metallic gradient (left-to-right = dark-light-dark cylinder illusion) -->
-            <linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stop-color="#111111"/>
-              <stop offset="25%"  stop-color="#2E2E2E"/>
-              <stop offset="50%"  stop-color="#4A4A4A"/>
-              <stop offset="75%"  stop-color="#2E2E2E"/>
-              <stop offset="100%" stop-color="#0E0E0E"/>
-            </linearGradient>
-            <!-- Darker accent band -->
-            <linearGradient id="hg2" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stop-color="#0A0A0A"/>
-              <stop offset="40%"  stop-color="#252525"/>
-              <stop offset="60%"  stop-color="#252525"/>
-              <stop offset="100%" stop-color="#0A0A0A"/>
-            </linearGradient>
-            <!-- Emitter gradient -->
-            <linearGradient id="eg" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stop-color="#0D0D0D"/>
-              <stop offset="30%"  stop-color="#383838"/>
-              <stop offset="50%"  stop-color="#555"/>
-              <stop offset="70%"  stop-color="#383838"/>
-              <stop offset="100%" stop-color="#0D0D0D"/>
-            </linearGradient>
-            <!-- Red indicator glow -->
-            <filter id="ig" x="-200%" y="-200%" width="500%" height="500%">
-              <feGaussianBlur stdDeviation="2.5"/>
-            </filter>
-            <!-- Ambient red bloom behind whole saber -->
-            <filter id="amb" x="-500%" y="-20%" width="1100%" height="140%">
-              <feGaussianBlur stdDeviation="20"/>
-            </filter>
-          </defs>
-
-          <!-- ── AMBIENT BLOOM ── -->
-          <!-- Wide red bloom along the blade length -->
-          <rect x="35" y="8" width="10" height="350" fill="#BB0012" filter="url(#amb)" opacity="0.5"/>
-
-          <!-- ── BLADE ── tip at top (y=8), base at emitter (y=360) -->
-
-          <!-- Outermost wide glow -->
-          <line x1="40" y1="8"  x2="40" y2="362" stroke="#7A000A" stroke-width="22" filter="url(#bg)"  opacity="0.38"/>
-          <!-- Mid glow -->
-          <line x1="40" y1="8"  x2="40" y2="362" stroke="#CC0018" stroke-width="10" filter="url(#bmid)" opacity="0.65"/>
-          <!-- Sharp bright edge -->
-          <line x1="40" y1="8"  x2="40" y2="362" stroke="#FF1A30" stroke-width="3.5" opacity="0.96"/>
-          <!-- Hot white-pink core — upper 60% only, fades toward base -->
-          <line x1="40" y1="8"  x2="40" y2="230" stroke="#FFB8B8" stroke-width="1.2" opacity="0.55"/>
-
-          <!-- Blade tip cap — tapered point -->
-          <path d="M 37 8 C 37 2 40 0 40 0 C 40 0 43 2 43 8 Z" fill="#FF3344" opacity="0.9"/>
-
-          <!-- ── EMITTER SHROUD ── (connects blade to hilt) -->
-          <!-- Emitter collar — wider than hilt, creates flare -->
-          <rect x="29" y="358" width="22" height="18" rx="3" fill="url(#eg)"/>
-          <!-- Emitter inner lip -->
-          <rect x="32" y="363" width="16" height="8"  rx="2" fill="#1A1A1A"/>
-          <!-- Emitter side slots -->
-          <rect x="29" y="362" width="4"  height="10" rx="1" fill="#0A0A0A"/>
-          <rect x="47" y="362" width="4"  height="10" rx="1" fill="#0A0A0A"/>
-
-          <!-- ── GRIP SLEEVE (upper) ── -->
-          <rect x="32" y="374" width="16" height="14" rx="2" fill="url(#hg2)"/>
-          <!-- Ring detail -->
-          <rect x="31" y="380" width="18" height="3" rx="1" fill="#090909"/>
-
-          <!-- ── MAIN GRIP ── (y 388 → 448) -->
-          <rect x="33" y="386" width="14" height="62" rx="3" fill="url(#hg)"/>
-
-          <!-- Grip ridges — 8 evenly spaced -->
-          <rect x="32" y="392" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
-          <rect x="32" y="399" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
-          <rect x="32" y="406" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
-          <rect x="32" y="413" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
-          <rect x="32" y="420" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
-          <rect x="32" y="427" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
-          <rect x="32" y="434" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
-          <rect x="32" y="441" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
-
-          <!-- Activation switch housing -->
-          <rect x="44" y="408" width="6"  height="18" rx="2" fill="#1C1C1C"/>
-          <!-- Switch button -->
-          <rect x="45" y="411" width="4"  height="8"  rx="1.5" fill="#CC0015"/>
-          <rect x="45" y="411" width="4"  height="4"  rx="1.5" fill="#FF2030" opacity="0.8"/>
-          <!-- Switch glow -->
-          <rect x="45" y="411" width="4"  height="8"  rx="1.5" fill="#FF0020" filter="url(#ig)" opacity="0.7"/>
-
-          <!-- ── POMMEL COLLAR ── -->
-          <rect x="30" y="447" width="20" height="14" rx="2" fill="url(#eg)"/>
-          <!-- Collar detail ring -->
-          <rect x="30" y="452" width="20" height="3"  rx="1" fill="#0A0A0A"/>
-
-          <!-- ── POMMEL END CAP ── -->
-          <rect x="32" y="459" width="16" height="22" rx="4" fill="url(#hg)"/>
-          <!-- End circle -->
-          <ellipse cx="40" cy="479" rx="8"  ry="6"  fill="#181818"/>
-          <ellipse cx="40" cy="479" rx="4.5" ry="3.5" fill="#101010"/>
-          <!-- Pommel hex detail -->
-          <circle  cx="40" cy="479" r="2" fill="#0A0A0A"/>
-        </svg>
-      </div>
-
       <!-- Text content -->
       <div class="hero-left-content" id="textReveal">
 
@@ -930,15 +756,15 @@
 
         <div class="trust-row" id="trustRow">
           <span class="trust-item">
-            <span class="trust-icon"><svg viewBox="0 0 7 7" fill="none"><path d="M1 3.5l1.8 1.8 3.2-3.2" stroke="rgba(220,30,50,0.8)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="trust-icon"><svg viewBox="0 0 7 7" fill="none"><path d="M1 3.5l1.8 1.8 3.2-3.2" stroke="rgba(0,229,204,0.8)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
             Secure connection
           </span>
           <span class="trust-item">
-            <span class="trust-icon"><svg viewBox="0 0 7 7" fill="none"><path d="M1 3.5l1.8 1.8 3.2-3.2" stroke="rgba(220,30,50,0.8)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="trust-icon"><svg viewBox="0 0 7 7" fill="none"><path d="M1 3.5l1.8 1.8 3.2-3.2" stroke="rgba(0,229,204,0.8)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
             Real-time processing
           </span>
           <span class="trust-item">
-            <span class="trust-icon"><svg viewBox="0 0 7 7" fill="none"><path d="M1 3.5l1.8 1.8 3.2-3.2" stroke="rgba(220,30,50,0.8)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="trust-icon"><svg viewBox="0 0 7 7" fill="none"><path d="M1 3.5l1.8 1.8 3.2-3.2" stroke="rgba(0,229,204,0.8)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
             24 / 7 availability
           </span>
         </div>
@@ -1028,11 +854,6 @@
 
   <div class="footer-bar" aria-hidden="true"></div>
 
-  <!-- Hyperspeed intro overlay -->
-  <div id="intro" aria-hidden="true">
-    <canvas id="introCanvas"></canvas>
-  </div>
-
   <script>
     // ── Animated text engine (preserved) ───────────────────────────────────────
 
@@ -1090,186 +911,17 @@
         started = true;
         el.classList.add('revealed');
         eyebrow.classList.add('visible');
-        // Sith figure fades in first, then text begins
-        document.getElementById('sithFigure').classList.add('visible');
         setTimeout(() => {
           animateLine(document.getElementById('line1'), 'System Online',   onDone).start();
           animateLine(document.getElementById('line2'), 'Ready for input', onDone).start();
         }, 150);
       }
 
-      // Start only after the hyperspeed intro finishes
-      window.addEventListener('intro-done', start, { once: true });
-    })();
-
-    // ── Hyperspeed intro ───────────────────────────────────────────────────────
-
-    (function hyperspeed() {
-      const overlay = document.getElementById('intro');
-      const canvas  = document.getElementById('introCanvas');
-      const ctx     = canvas.getContext('2d');
-
-      const STAR_COUNT  = 380;
-      const MAX_SPEED   = 38;
-      const ACCEL_RATE  = 1.062;   // per frame
-      const ACCEL_MS    = 1400;    // ramp-up duration
-      const HOLD_MS     = 300;     // hold at max warp
-      const DECEL_MS    = 420;     // wind-down
-      const FADE_MS     = 750;     // overlay opacity transition
-      const FLASH_MS    = 120;     // bright flash at peak warp
-      const STAR_COLORS = ['#ffffff','#ffffff','#ffcccc','#FF4444','#CC0011','#FF1A2E','#FF6633','#AA0008'];
-
-      let W, H, cx, cy, stars = [], speed = 0.8, raf, phase = 'accel';
-      let flashAlpha = 0, startTime;
-
-      function resize() {
-        W = canvas.width  = window.innerWidth;
-        H = canvas.height = window.innerHeight;
-        cx = W / 2;  cy = H / 2;
-      }
-
-      function makeStar(atCenter) {
-        const angle = Math.random() * Math.PI * 2;
-        const r     = atCenter ? Math.random() * 6 : Math.random() * Math.min(W, H) * 0.5;
-        return {
-          x:     cx + Math.cos(angle) * r,
-          y:     cy + Math.sin(angle) * r,
-          px:    cx + Math.cos(angle) * r,
-          py:    cy + Math.sin(angle) * r,
-          angle,
-          speed: atCenter ? speed * (0.2 + Math.random() * 0.6) : speed * (0.5 + Math.random()),
-          w:     0.35 + Math.random() * 1.1,
-          color: STAR_COLORS[Math.floor(Math.random() * STAR_COLORS.length)],
-        };
-      }
-
-      function init() {
-        resize();
-        // Distribute initial stars across the field so it doesn't look empty at start
-        stars = Array.from({ length: STAR_COUNT }, (_, i) =>
-          makeStar(i < STAR_COUNT * 0.55)
-        );
-      }
-
-      function drawCenterGlow(t) {
-        // Radial glow that intensifies as speed builds
-        const intensity = Math.min(1, speed / MAX_SPEED);
-        if (intensity < 0.05) return;
-        const r = 20 + intensity * 260;
-        const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-        g.addColorStop(0,   `rgba(255,20,40,${intensity * 0.65})`);
-        g.addColorStop(0.35,`rgba(192,0,20,${intensity * 0.40})`);
-        g.addColorStop(0.7, `rgba(120,0,10,${intensity * 0.20})`);
-        g.addColorStop(1,   'transparent');
-        ctx.save();
-        ctx.globalCompositeOperation = 'screen';
-        ctx.fillStyle = g;
-        ctx.fillRect(0, 0, W, H);
-        ctx.restore();
-      }
-
-      function drawFlash() {
-        if (flashAlpha <= 0) return;
-        ctx.save();
-        ctx.globalAlpha = flashAlpha;
-        ctx.fillStyle = '#CC0011';
-        ctx.fillRect(0, 0, W, H);
-        ctx.restore();
-      }
-
-      let peakFlashed = false;
-
-      function frame(now) {
-        const elapsed = now - startTime;
-
-        // Phase transitions
-        if (phase === 'accel' && elapsed >= ACCEL_MS) {
-          phase = 'hold';
-        }
-        if (phase === 'hold' && elapsed >= ACCEL_MS + HOLD_MS) {
-          phase = 'decel';
-          // Trigger the flash at peak warp
-          if (!peakFlashed) {
-            peakFlashed = true;
-            flashAlpha = 0.55;
-          }
-        }
-        if (phase === 'decel' && elapsed >= ACCEL_MS + HOLD_MS + DECEL_MS) {
-          // Begin fade out
-          overlay.classList.add('fading');
-          setTimeout(() => {
-            overlay.style.display = 'none';
-            window.dispatchEvent(new Event('intro-done'));
-          }, FADE_MS);
-          cancelAnimationFrame(raf);
-          return;
-        }
-
-        // Speed update
-        if (phase === 'accel') {
-          speed = Math.min(speed * ACCEL_RATE, MAX_SPEED);
-        } else if (phase === 'decel') {
-          speed = Math.max(speed * 0.90, 0.5);
-        }
-
-        // Flash decay
-        if (flashAlpha > 0) flashAlpha = Math.max(0, flashAlpha - 0.04);
-
-        // Trail — partial clear gives streak persistence
-        ctx.fillStyle = phase === 'decel'
-          ? 'rgba(0,0,0,0.48)'
-          : 'rgba(0,0,0,0.30)';
-        ctx.fillRect(0, 0, W, H);
-
-        // Draw stars
-        for (const s of stars) {
-          s.px = s.x;
-          s.py = s.y;
-
-          if (phase === 'accel') {
-            s.speed = Math.min(s.speed * ACCEL_RATE, MAX_SPEED * 2.8);
-          } else if (phase === 'decel') {
-            s.speed = Math.max(s.speed * 0.88, 0.3);
-          }
-
-          s.x += Math.cos(s.angle) * s.speed;
-          s.y += Math.sin(s.angle) * s.speed;
-
-          // Reset stars that leave the viewport
-          if (s.x < -60 || s.x > W + 60 || s.y < -60 || s.y > H + 60) {
-            const ns = makeStar(true);
-            ns.speed = phase === 'decel' ? speed * 0.15 : speed * 0.25;
-            Object.assign(s, ns);
-            continue;
-          }
-
-          const alpha = Math.min(0.95, s.speed / 9);
-          const lw    = s.w * Math.max(1, s.speed / 12);
-          ctx.beginPath();
-          ctx.strokeStyle = s.color;
-          ctx.lineWidth   = lw;
-          ctx.globalAlpha = alpha;
-          ctx.moveTo(s.px, s.py);
-          ctx.lineTo(s.x, s.y);
-          ctx.stroke();
-        }
-
-        ctx.globalAlpha = 1;
-
-        drawCenterGlow(elapsed);
-        drawFlash();
-
-        raf = requestAnimationFrame(frame);
-      }
-
-      // Boot
-      init();
-      ctx.fillStyle = '#000000';
-      ctx.fillRect(0, 0, W, H);
-      startTime = performance.now();
-      raf = requestAnimationFrame(frame);
-
-      window.addEventListener('resize', () => { resize(); });
+      const obs = new IntersectionObserver(([e]) => {
+        if (e.isIntersecting) { start(); obs.disconnect(); }
+      }, { threshold: 0 });
+      obs.observe(el);
+      setTimeout(start, 350);
     })();
 
     // ── Float-label filled state ────────────────────────────────────────────────

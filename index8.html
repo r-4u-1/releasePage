@@ -234,19 +234,19 @@
     .sith-wrap {
       position: absolute;
       z-index: 2;
-      top: 3%;
-      bottom: 30%;
+      top: 50%;
       left: 50%;
-      transform: translateX(-50%);
-      width: clamp(64px, 11%, 88px);
+      transform: translate(-50%, -58%);
+      width: clamp(180px, 34%, 270px);
       pointer-events: none;
       opacity: 0;
-      transition: opacity 2s ease;
+      transition: opacity 1.8s ease;
+      filter: drop-shadow(0 0 40px rgba(200,0,20,0.45)) drop-shadow(0 0 80px rgba(150,0,10,0.25));
     }
 
     .sith-wrap.visible { opacity: 1; }
 
-    .sith-wrap svg { width: 100%; height: 100%; display: block; }
+    .sith-wrap svg { width: 100%; height: auto; display: block; }
 
     /* ══════════════════════════════════════════════════════════════════════════
        ANIMATED TEXT — ENGINE PRESERVED
@@ -801,116 +801,80 @@
 
       <!-- Sith lord figure -->
       <div class="sith-wrap" id="sithFigure" aria-hidden="true">
-        <svg viewBox="0 0 80 500" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
+        <svg viewBox="0 0 240 430" fill="none" xmlns="http://www.w3.org/2000/svg">
           <defs>
-            <!-- Blade outer glow -->
-            <filter id="bg" x="-800%" y="-5%" width="1700%" height="110%">
-              <feGaussianBlur stdDeviation="9" result="b"/>
-              <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            <filter id="saberGlow" x="-150%" y="-150%" width="400%" height="400%">
+              <feGaussianBlur stdDeviation="5" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
             </filter>
-            <!-- Blade tight glow -->
-            <filter id="bmid" x="-400%" y="-5%" width="900%" height="110%">
-              <feGaussianBlur stdDeviation="4" result="b"/>
-              <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+            <filter id="eyeGlow" x="-200%" y="-200%" width="500%" height="500%">
+              <feGaussianBlur stdDeviation="3" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
             </filter>
-            <!-- Hilt metallic gradient (left-to-right = dark-light-dark cylinder illusion) -->
-            <linearGradient id="hg" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stop-color="#111111"/>
-              <stop offset="25%"  stop-color="#2E2E2E"/>
-              <stop offset="50%"  stop-color="#4A4A4A"/>
-              <stop offset="75%"  stop-color="#2E2E2E"/>
-              <stop offset="100%" stop-color="#0E0E0E"/>
-            </linearGradient>
-            <!-- Darker accent band -->
-            <linearGradient id="hg2" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stop-color="#0A0A0A"/>
-              <stop offset="40%"  stop-color="#252525"/>
-              <stop offset="60%"  stop-color="#252525"/>
-              <stop offset="100%" stop-color="#0A0A0A"/>
-            </linearGradient>
-            <!-- Emitter gradient -->
-            <linearGradient id="eg" x1="0%" y1="0%" x2="100%" y2="0%">
-              <stop offset="0%"   stop-color="#0D0D0D"/>
-              <stop offset="30%"  stop-color="#383838"/>
-              <stop offset="50%"  stop-color="#555"/>
-              <stop offset="70%"  stop-color="#383838"/>
-              <stop offset="100%" stop-color="#0D0D0D"/>
-            </linearGradient>
-            <!-- Red indicator glow -->
-            <filter id="ig" x="-200%" y="-200%" width="500%" height="500%">
-              <feGaussianBlur stdDeviation="2.5"/>
+            <filter id="ambientBloom" x="-50%" y="-50%" width="200%" height="200%">
+              <feGaussianBlur stdDeviation="18"/>
             </filter>
-            <!-- Ambient red bloom behind whole saber -->
-            <filter id="amb" x="-500%" y="-20%" width="1100%" height="140%">
-              <feGaussianBlur stdDeviation="20"/>
-            </filter>
+            <radialGradient id="robeShade" cx="50%" cy="30%" r="60%">
+              <stop offset="0%" stop-color="#180008"/>
+              <stop offset="100%" stop-color="#060002"/>
+            </radialGradient>
           </defs>
 
-          <!-- ── AMBIENT BLOOM ── -->
-          <!-- Wide red bloom along the blade length -->
-          <rect x="35" y="8" width="10" height="350" fill="#BB0012" filter="url(#amb)" opacity="0.5"/>
+          <!-- Saber ambient light bloom -->
+          <ellipse cx="185" cy="170" rx="95" ry="130" fill="#AA0012" filter="url(#ambientBloom)" opacity="0.28"/>
 
-          <!-- ── BLADE ── tip at top (y=8), base at emitter (y=360) -->
+          <!-- Cape left -->
+          <path d="M 68 138 C 42 210 18 310 4 430 L 56 430 C 60 330 76 235 90 165 Z" fill="#0A0002" opacity="0.98"/>
+          <!-- Cape right -->
+          <path d="M 166 138 C 198 210 218 310 236 430 L 184 430 C 178 330 164 235 152 165 Z" fill="#0A0002" opacity="0.98"/>
+          <!-- Robe body -->
+          <path d="M 87 158 L 157 158 C 166 255 164 345 160 430 L 80 430 C 76 345 74 255 87 158 Z" fill="#060001"/>
 
-          <!-- Outermost wide glow -->
-          <line x1="40" y1="8"  x2="40" y2="362" stroke="#7A000A" stroke-width="22" filter="url(#bg)"  opacity="0.38"/>
-          <!-- Mid glow -->
-          <line x1="40" y1="8"  x2="40" y2="362" stroke="#CC0018" stroke-width="10" filter="url(#bmid)" opacity="0.65"/>
-          <!-- Sharp bright edge -->
-          <line x1="40" y1="8"  x2="40" y2="362" stroke="#FF1A30" stroke-width="3.5" opacity="0.96"/>
-          <!-- Hot white-pink core — upper 60% only, fades toward base -->
-          <line x1="40" y1="8"  x2="40" y2="230" stroke="#FFB8B8" stroke-width="1.2" opacity="0.55"/>
+          <!-- Chest panel detail -->
+          <path d="M 94 168 L 148 168 L 152 208 L 90 208 Z" fill="#110006" opacity="0.75"/>
+          <line x1="121" y1="208" x2="121" y2="248" stroke="#1A000A" stroke-width="1.5" opacity="0.5"/>
+          <line x1="100" y1="188" x2="142" y2="188" stroke="#1A000A" stroke-width="1" opacity="0.4"/>
 
-          <!-- Blade tip cap — tapered point -->
-          <path d="M 37 8 C 37 2 40 0 40 0 C 40 0 43 2 43 8 Z" fill="#FF3344" opacity="0.9"/>
+          <!-- Neck -->
+          <rect x="107" y="108" width="28" height="54" rx="5" fill="#060001"/>
 
-          <!-- ── EMITTER SHROUD ── (connects blade to hilt) -->
-          <!-- Emitter collar — wider than hilt, creates flare -->
-          <rect x="29" y="358" width="22" height="18" rx="3" fill="url(#eg)"/>
-          <!-- Emitter inner lip -->
-          <rect x="32" y="363" width="16" height="8"  rx="2" fill="#1A1A1A"/>
-          <!-- Emitter side slots -->
-          <rect x="29" y="362" width="4"  height="10" rx="1" fill="#0A0A0A"/>
-          <rect x="47" y="362" width="4"  height="10" rx="1" fill="#0A0A0A"/>
+          <!-- Hood outer -->
+          <path d="M 52 82 C 52 33 83 4 121 4 C 159 4 190 33 190 82 C 190 112 177 126 157 136 C 142 144 121 146 121 146 C 121 146 100 144 85 136 C 65 126 52 112 52 82 Z" fill="#080003"/>
+          <!-- Hood inner shadow -->
+          <path d="M 68 86 C 68 52 90 30 121 30 C 152 30 174 52 174 86 C 174 106 164 118 149 126 C 137 133 121 135 121 135 C 121 135 105 133 93 126 C 78 118 68 106 68 86 Z" fill="#030001"/>
+          <!-- Face void -->
+          <ellipse cx="121" cy="88" rx="28" ry="24" fill="#020001"/>
 
-          <!-- ── GRIP SLEEVE (upper) ── -->
-          <rect x="32" y="374" width="16" height="14" rx="2" fill="url(#hg2)"/>
-          <!-- Ring detail -->
-          <rect x="31" y="380" width="18" height="3" rx="1" fill="#090909"/>
+          <!-- Sith eyes -->
+          <ellipse cx="110" cy="85" rx="5" ry="3.5" fill="#DD1100" opacity="0.75" filter="url(#eyeGlow)"/>
+          <ellipse cx="132" cy="85" rx="5" ry="3.5" fill="#DD1100" opacity="0.75" filter="url(#eyeGlow)"/>
 
-          <!-- ── MAIN GRIP ── (y 388 → 448) -->
-          <rect x="33" y="386" width="14" height="62" rx="3" fill="url(#hg)"/>
+          <!-- Right arm raised, holding saber -->
+          <path d="M 152 170 C 174 155 196 136 208 114" stroke="#060001" stroke-width="24" stroke-linecap="round"/>
+          <!-- Left arm slightly extended -->
+          <path d="M 92 172 C 72 184 56 196 46 210" stroke="#060001" stroke-width="20" stroke-linecap="round"/>
+          <!-- Left hand subtle -->
+          <ellipse cx="44" cy="214" rx="9" ry="7" fill="#060001"/>
 
-          <!-- Grip ridges — 8 evenly spaced -->
-          <rect x="32" y="392" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
-          <rect x="32" y="399" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
-          <rect x="32" y="406" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
-          <rect x="32" y="413" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
-          <rect x="32" y="420" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
-          <rect x="32" y="427" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
-          <rect x="32" y="434" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
-          <rect x="32" y="441" width="16" height="2.5" rx="1" fill="#0A0A0A"/>
+          <!-- Saber hilt -->
+          <rect x="200" y="93" width="13" height="38" rx="4" fill="#1C1C1C" transform="rotate(28 206 112)"/>
+          <rect x="202" y="95" width="9" height="7" rx="2" fill="#2A2A2A" transform="rotate(28 206 112)"/>
+          <rect x="203" y="116" width="9" height="4" rx="1" fill="#222" transform="rotate(28 206 112)"/>
 
-          <!-- Activation switch housing -->
-          <rect x="44" y="408" width="6"  height="18" rx="2" fill="#1C1C1C"/>
-          <!-- Switch button -->
-          <rect x="45" y="411" width="4"  height="8"  rx="1.5" fill="#CC0015"/>
-          <rect x="45" y="411" width="4"  height="4"  rx="1.5" fill="#FF2030" opacity="0.8"/>
-          <!-- Switch glow -->
-          <rect x="45" y="411" width="4"  height="8"  rx="1.5" fill="#FF0020" filter="url(#ig)" opacity="0.7"/>
+          <!-- Saber blade glow layers (outermost to innermost) -->
+          <line x1="206" y1="99" x2="52" y2="374" stroke="#880010" stroke-width="12" filter="url(#saberGlow)" opacity="0.35"/>
+          <line x1="206" y1="99" x2="52" y2="374" stroke="#CC0018" stroke-width="6"  filter="url(#saberGlow)" opacity="0.6"/>
+          <line x1="206" y1="99" x2="52" y2="374" stroke="#FF1A30" stroke-width="2.5" opacity="0.92"/>
+          <!-- Bright core -->
+          <line x1="206" y1="99" x2="100" y2="264" stroke="#FFAAAA" stroke-width="0.8" opacity="0.55"/>
+          <!-- Tip glow -->
+          <circle cx="52" cy="374" r="9" fill="#CC0018" filter="url(#saberGlow)" opacity="0.55"/>
 
-          <!-- ── POMMEL COLLAR ── -->
-          <rect x="30" y="447" width="20" height="14" rx="2" fill="url(#eg)"/>
-          <!-- Collar detail ring -->
-          <rect x="30" y="452" width="20" height="3"  rx="1" fill="#0A0A0A"/>
-
-          <!-- ── POMMEL END CAP ── -->
-          <rect x="32" y="459" width="16" height="22" rx="4" fill="url(#hg)"/>
-          <!-- End circle -->
-          <ellipse cx="40" cy="479" rx="8"  ry="6"  fill="#181818"/>
-          <ellipse cx="40" cy="479" rx="4.5" ry="3.5" fill="#101010"/>
-          <!-- Pommel hex detail -->
-          <circle  cx="40" cy="479" r="2" fill="#0A0A0A"/>
+          <!-- Sparks / embers at tip -->
+          <circle cx="38" cy="388" r="1.5" fill="#FF3333" opacity="0.6"/>
+          <circle cx="62" cy="382" r="1"   fill="#FF5555" opacity="0.5"/>
+          <circle cx="44" cy="398" r="1"   fill="#CC0010" opacity="0.4"/>
+          <circle cx="70" cy="370" r="1.2" fill="#FF4444" opacity="0.45"/>
         </svg>
       </div>
 
