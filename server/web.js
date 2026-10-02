@@ -1,110 +1,122 @@
-// A tiny web framework on Node's built-in http module — just what this tool needs:
-// routes with :params, middleware, JSON bodies, and res.status().json() / send() / sendFile().
+// A tiny web framework on Node's built-in http module.
+//
+//   const app = createApp({ before });       before(req) runs first on every request
+//   app.get('/api/apps/:app', handler);      :app ends up in req.params.app
+//   app.post('/api/release', handler);       JSON bodies end up in req.body
+//
+// A handler returns an object (sent as JSON), a string (sent as HTML), or nothing
+// (it answered itself, e.g. with sendFile). To fail, throw new HttpError(status, message):
+// the browser gets { ok: false, message }.
 const http = require('node:http');
 const fs = require('node:fs');
+const path = require('node:path');
 
-const TYPES = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.css': 'text/css' };
+class HttpError extends Error {
+  constructor(status, message) {
+    super(message);
+    this.status = status;
+  }
+}
 
-function createApp({ bodyLimit = 100 * 1024 } = {}) {
-  const middleware = [];
+const TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'text/javascript; charset=utf-8',
+};
+
+function sendJson(res, status, data) {
+  res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+  res.end(JSON.stringify(data));
+}
+
+function sendFile(res, file) {
+  res.setHeader('Content-Type', TYPES[path.extname(file)] || 'application/octet-stream');
+  fs.createReadStream(file)
+    .on('error', () => sendJson(res, 404, { ok: false, message: 'Not found' }))
+    .pipe(res);
+}
+
+// Reads the whole body, but keeps at most `limit` bytes of it.
+function readBody(req, limit) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on('data', chunk => {
+      size += chunk.length;
+      if (size <= limit) chunks.push(chunk);
+    });
+    req.on('end', () => {
+      if (size > limit) reject(new HttpError(413, 'Request body too large'));
+      else resolve(Buffer.concat(chunks).toString('utf8'));
+    });
+    req.on('error', reject);
+  });
+}
+
+function parseJson(req, text) {
+  if (!text || !/^application\/json/i.test(req.headers['content-type'] || '')) return undefined;
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new HttpError(400, 'Invalid JSON');
+  }
+}
+
+// Finds the route for a method + path, and collects its :params.
+function findRoute(routes, method, pathname) {
+  const parts = pathname.split('/');
+  for (const route of routes) {
+    if (route.method !== method || route.parts.length !== parts.length) continue;
+    const params = {};
+    const matches = route.parts.every((part, i) => {
+      if (part.startsWith(':')) params[part.slice(1)] = decodeURIComponent(parts[i]);
+      return part.startsWith(':') || part === parts[i];
+    });
+    if (matches) return { handler: route.handler, params };
+  }
+  return null;
+}
+
+function createApp({ bodyLimit = 100 * 1024, before = () => {} } = {}) {
   const routes = [];
 
-  const route = method => (path, ...handlers) => {
-    routes.push({ method, parts: path.split('/'), handlers });
-  };
-
-  // Matches "/api/apps/:app/tags" against a URL path; returns the params or null.
-  function match(r, method, pathname) {
-    if (r.method !== method) return null;
-    const parts = pathname.split('/');
-    if (parts.length !== r.parts.length) return null;
-    const params = {};
-    for (let i = 0; i < parts.length; i++) {
-      if (r.parts[i].startsWith(':')) params[r.parts[i].slice(1)] = decodeURIComponent(parts[i]);
-      else if (r.parts[i] !== parts[i]) return null;
-    }
-    return params;
-  }
-
-  function readJson(req) {
-    return new Promise((resolve, reject) => {
-      if (!/^application\/json\b/i.test(req.headers['content-type'] || '')) return resolve(undefined);
-      let size = 0;
-      const chunks = [];
-      const onData = c => {
-        size += c.length;
-        if (size <= bodyLimit) return chunks.push(c);
-        // Too big: stop keeping it, let the rest drain, and answer 413.
-        req.off('data', onData);
-        req.resume();
-        reject(Object.assign(new Error('Request body too large'), { status: 413 }));
-      };
-      req.on('data', onData);
-      req.on('end', () => {
-        const text = Buffer.concat(chunks).toString('utf8');
-        try { resolve(text ? JSON.parse(text) : undefined); }
-        catch { reject(Object.assign(new Error('Invalid JSON'), { status: 400 })); }
-      });
-      req.on('error', reject);
-    });
-  }
-
-  function extend(res) {
-    res.status = code => { res.statusCode = code; return res; };
-    res.json = data => {
-      res.setHeader('Content-Type', 'application/json; charset=utf-8');
-      res.end(JSON.stringify(data));
-    };
-    res.send = text => {
-      if (!res.hasHeader('Content-Type')) res.setHeader('Content-Type', 'text/html; charset=utf-8');
-      res.end(String(text));
-    };
-    res.sendFile = file => {
-      const ext = file.slice(file.lastIndexOf('.')).toLowerCase();
-      fs.createReadStream(file)
-        .on('open', () => res.setHeader('Content-Type', TYPES[ext] || 'application/octet-stream'))
-        .on('error', () => { if (!res.headersSent) res.status(404).send('Not found'); })
-        .pipe(res);
-    };
-  }
-
-  // Runs handlers in order; each one either answers or calls next().
-  async function run(handlers, req, res) {
-    for (const h of handlers) {
-      let calledNext = false;
-      await h(req, res, () => { calledNext = true; });
-      if (!calledNext) return true;
-    }
-    return false;
-  }
-
   async function handle(req, res) {
-    extend(res);
     try {
       const url = new URL(req.url, 'http://localhost');
-      req.query = Object.fromEntries(url.searchParams);
-      if (await run(middleware, req, res)) return;  // a middleware answered (e.g. 403)
+      before(req);
+      const route = findRoute(routes, req.method, url.pathname);
+      if (!route) throw new HttpError(404, 'Not found');
 
-      let params = null;
-      const r = routes.find(r => (params = match(r, req.method, url.pathname)));
-      if (!r) return res.status(404).json({ ok: false, message: 'Not found' });
-      req.params = params;
-      req.body = await readJson(req);
-      await run(r.handlers, req, res);
+      req.params = route.params;
+      req.query = Object.fromEntries(url.searchParams);
+      req.body = parseJson(req, await readBody(req, bodyLimit));
+
+      const result = await route.handler(req, res);
+      if (typeof result === 'string') {
+        res.setHeader('Content-Type', TYPES['.html']);
+        res.end(result);
+      } else if (result !== undefined) {
+        sendJson(res, 200, result);
+      }
     } catch (err) {
+      // URIError: a broken %-escape in the address.
       const status = err.status || (err instanceof URIError ? 400 : 500);
-      if (status === 500) console.error('[server]', err);
-      if (!res.headersSent) res.status(status).json({ ok: false, message: status === 500 ? 'Server error' : err.message });
-      else res.end();
+      if (status >= 500) console.error('[server]', err.message);
+      const message = err instanceof HttpError || status === 400 ? err.message : 'Server error';
+      if (res.headersSent) res.end();
+      else sendJson(res, status, { ok: false, message });
     }
   }
 
+  const addRoute = method => (routePath, handler) => {
+    routes.push({ method, parts: routePath.split('/'), handler });
+  };
+
   return {
-    use: fn => middleware.push(fn),
-    get: route('GET'),
-    post: route('POST'),
+    get: addRoute('GET'),
+    post: addRoute('POST'),
     listen: (...args) => http.createServer(handle).listen(...args),
   };
 }
 
-module.exports = { createApp };
+module.exports = { createApp, HttpError, sendFile };

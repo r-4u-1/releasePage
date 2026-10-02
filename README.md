@@ -5,7 +5,7 @@ A small local web app that turns the git history of one app in the monorepo into
 You pick an app and two git tags. The app reads every change between those tags and creates a child page under that app's release page in Confluence, with a table of who did what and two checkbox columns for accessibility (a11y) review.
 
 ```
- Form (index15.html)          Local server (Node, built-in)            Outside
+ Form (public/)               Local server (server/)                   Outside
 ┌──────────────────┐        ┌───────────────────────────────┐
 │ Token            │──────▶│ check token ───────────────────┼──▶ Confluence
 │ App              │──────▶│ list apps / tags ──────────────┼──▶ git (app folder)
@@ -58,7 +58,7 @@ Open **http://localhost:3000/** and:
 | `app-a` | `100001` (App A releases) | `app-a-1-OLD` / `app-a-1-NEW`, `app-a-2-OLD` / `app-a-2-NEW` |
 | `app-b` | `100002` (App B releases) | `app-b-1-OLD` / `app-b-1-NEW` |
 
-All fake data lives in `server/fake/.data/`, which git ignores. To start again from fresh fake data:
+All fake data lives in `server/.fake/`, which git ignores. To start again from fresh fake data:
 
 ```bash
 npm run fake -- --reset
@@ -78,13 +78,13 @@ monorepo/
 ├── admin-app/           ← listed
 ├── docs/                ← not listed
 └── release-page/        ← this tool (not listed)
-    ├── index15.html
+    ├── public/
     └── server/
 ```
 
 **2. Nothing to install.** No `npm install` is needed. You only need Node.js 18.11+ and git.
 
-**3. Set the Confluence address.** In [`config.json`](config.json), under `environments.real`, replace the example URL with yours:
+**3. Set the Confluence address.** In [`server/config.json`](server/config.json), under `environments.real`, replace the example URL with yours:
 
 ```json
 "confluenceBaseUrl": "https://confluence.your-company.com"
@@ -223,17 +223,21 @@ Anyone logged into your computer can still read `.env`, as with any `.env` file.
 
 ## Configuration
 
-Everything is in [`config.json`](config.json). Paths are relative to the `server` folder.
+Everything is in [`server/config.json`](server/config.json). The top-level values apply to every environment; an environment only lists what it changes. Paths are relative to the `server` folder.
 
 ```json
 {
   "port": 3000,
   "host": "127.0.0.1",
-  "pageFile": "../index15.html",
+  "publicDir": "../public",
   "appPattern": "*-app",
+  "repoRoot": "",
+  "parentsFile": "parents.json",
+  "envFile": ".env",
+  "confluenceEmail": "",
   "environments": {
-    "real": { ... },
-    "fake": { ... }
+    "real": { "confluenceBaseUrl": "https://confluence.example.com" },
+    "fake": { "fake": true, "confluenceBaseUrl": "http://localhost:3999", "appPattern": "app-*", ... }
   }
 }
 ```
@@ -242,19 +246,13 @@ Everything is in [`config.json`](config.json). Paths are relative to the `server
 |---|---|
 | `port` | Port the server listens on. The `PORT` environment variable overrides it. |
 | `host` | Address the server listens on. Keep `127.0.0.1`. |
-| `pageFile` | The form page, served at `/`. |
-| `appPattern` | Which top-level folders are apps, e.g. `*-app`. `*` matches anything. Can also be set per environment. |
-
-Each environment has:
-
-| Setting | Meaning |
-|---|---|
-| `confluenceBaseUrl` | Confluence address. Data Center: `https://confluence.your-company.com`. Cloud: `https://<site>.atlassian.net/wiki`. |
-| `confluenceEmail` | Empty for Data Center (the token is sent as `Bearer`). For Cloud, the Atlassian account email that owns the API token. |
+| `publicDir` | The folder with the form page. Only the files in it can be fetched. |
+| `appPattern` | Which top-level folders are apps, e.g. `*-app`. `*` matches anything. |
 | `repoRoot` | Monorepo root. Empty means "the git repo this tool is inside". |
 | `parentsFile` | The saved app → parent page ID list. |
 | `envFile` | The file the token is read from and saved to. |
-| `appPattern` | Overrides the top-level `appPattern` for this environment (fake uses `app-*`). |
+| `confluenceBaseUrl` | Confluence address. Data Center: `https://confluence.your-company.com`. Cloud: `https://<site>.atlassian.net/wiki`. |
+| `confluenceEmail` | Empty for Data Center (the token is sent as `Bearer`). For Cloud, the Atlassian account email that owns the API token. |
 | `fake` | `true` starts the fake repo and fake Confluence first. |
 
 ---
@@ -265,47 +263,49 @@ Each environment has:
 |---|---|---|---|
 | `npm run dev` | real | your monorepo | yours, from `config.json` |
 | `npm start` | real (no auto-restart) | your monorepo | yours |
-| `npm run fake` | fake | `fake/.data/repo` | fake, on `localhost:3999` |
+| `npm run fake` | fake | `.fake/repo` | fake, on `localhost:3999` |
 | `node server.js --env=<name>` | any environment in `config.json` | from config | from config |
 
-`npm run dev` and `npm run fake` restart the server when you change a file. To add another environment, such as `staging`, add an entry under `environments` and run `node server.js --env=staging`.
+`npm run dev` and `npm run fake` restart the server when you change a file. To add another environment, such as `staging`, add an entry under `environments` with the settings it changes, and run `node server.js --env=staging`.
 
 ---
 
 ## Files
 
 ```
-index15.html            The form page
+README.md               This file
+public/                 The form, served at http://localhost:3000/
+├── index.html          The page's markup
+├── style.css           All styles and CSS animations
+├── form.js             The form: field checks, apps → tags → changes, creating the page
+└── effects.js          The hyperspeed intro, the heading letters and the Sith figure
 server/
-├── README.md           This file
-├── config.json         URLs and paths per environment
-├── config.js           Reads config.json and the --fake / --env flags
-├── server.js           The web server and API
+├── config.json         Settings, plus what each environment changes
+├── config.js           Reads config.json and the --fake / --env= flag
+├── server.js           All routes: the page and the API
 ├── web.js              Tiny web framework on Node's built-in http module
 ├── git.js              Lists apps and tags, reads the git log
-├── releasePage.js      Builds the page title and table
-├── parents.js          Reads and saves parents.json
-├── envFile.js          Reads and saves the token in .env
+├── confluence.js       Confluence REST calls, and the release page's content
+├── storage.js          Reads and saves parents.json and the token in .env
+├── fake.js             Fake monorepo + fake Confluence for --fake
 ├── parents.json        Saved app → parent page IDs (created on first page; commit it)
 ├── .env                Your saved token (you create it; gitignored)
-└── fake/
-    ├── index.js        Fake monorepo + fake Confluence for --fake
-    └── .data/          Generated fake data (gitignored)
+└── .fake/              Generated fake data (gitignored)
 ```
 
 ---
 
 ## API
 
-The page uses these endpoints. All answers are JSON with `ok: true/false`, and a `message` when there's something to show.
+The page uses these endpoints. All answers are JSON with `ok: true/false`. Errors come with a `message` and a matching HTTP status (400, 401, 404, …).
 
 | Method | Path | Does |
 |---|---|---|
 | `GET` | `/api/token` | Whether a token is saved, and whether one can be saved. Never returns the token. |
 | `POST` | `/api/verify/token` | `{ token? }`: checks the token, or the saved one when none is sent. Saves a typed token that passes. |
-| `POST` | `/api/verify/page` | `{ token?, pageId }`: checks that the token can open the page. |
+| `POST` | `/api/verify/page` | `{ token?, pageId }`: checks that the token can open the page, and returns its title. |
 | `GET` | `/api/apps` | The apps, each with its saved parent page ID. |
-| `GET` | `/api/apps/:app/tags` | The app's `OLD` / `NEW` tags, newest first. |
+| `GET` | `/api/apps/:app/tags` | The app's `OLD` / `NEW` tag names, highest number first. |
 | `GET` | `/api/apps/:app/changes?from=&to=` | The changes between two of the app's tags. |
 | `POST` | `/api/release` | `{ token?, app, pageId, version, date, from, to }`: creates the page and saves the parent for the app. |
 

@@ -1,24 +1,23 @@
 {
   "port": 3000,
   "host": "127.0.0.1",
-  "pageFile": "../index15.html",
+  "publicDir": "../public",
   "appPattern": "*-app",
+  "repoRoot": "",
+  "parentsFile": "parents.json",
+  "envFile": ".env",
+  "confluenceEmail": "",
   "environments": {
     "real": {
-      "confluenceBaseUrl": "https://confluence.example.com",
-      "confluenceEmail": "",
-      "repoRoot": "",
-      "parentsFile": "parents.json",
-      "envFile": ".env"
+      "confluenceBaseUrl": "https://confluence.example.com"
     },
     "fake": {
       "fake": true,
       "confluenceBaseUrl": "http://localhost:3999",
-      "confluenceEmail": "",
-      "repoRoot": "fake/.data/repo",
-      "parentsFile": "fake/.data/parents.json",
-      "envFile": "fake/.data/.env",
-      "appPattern": "app-*"
+      "appPattern": "app-*",
+      "repoRoot": ".fake/repo",
+      "parentsFile": ".fake/parents.json",
+      "envFile": ".fake/.env"
     }
   }
 }

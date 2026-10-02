@@ -1,42 +1,34 @@
-// Loads config.json and picks one environment from the command line:
+// Settings from config.json: the top-level values, overridden by the chosen environment.
 //   node server.js              → "real"
 //   node server.js --fake       → "fake"
 //   node server.js --env=<name> → any environment in config.json
-// Paths in config.json are relative to this folder.
 const path = require('node:path');
-const file = require('./config.json');
+const { environments, ...defaults } = require('./config.json');
 
-function envName(argv) {
-  const i = argv.findIndex(a => a === '--env' || a.startsWith('--env='));
-  if (i !== -1) return argv[i].includes('=') ? argv[i].split('=')[1] : argv[i + 1];
-  return argv.includes('--fake') ? 'fake' : 'real';
-}
+const args = process.argv.slice(2);
+const envArg = args.find(arg => arg.startsWith('--env='));
+const name = envArg ? envArg.slice('--env='.length) : args.includes('--fake') ? 'fake' : 'real';
 
-const name = envName(process.argv.slice(2));
-const env = file.environments[name];
-if (!env) {
-  console.error(`Unknown environment "${name}". Pick one of: ${Object.keys(file.environments).join(', ')}`);
+if (!environments[name]) {
+  console.error(`Unknown environment "${name}". Pick one of: ${Object.keys(environments).join(', ')}`);
   process.exit(1);
 }
 
-const rel = p => (p ? path.resolve(__dirname, p) : '');
+const settings = { ...defaults, ...environments[name] };
+
+// Paths in config.json are relative to this folder. An empty path stays empty.
+const fromHere = file => (file ? path.resolve(__dirname, file) : '');
 
 module.exports = {
   name,
-  fake: !!env.fake,
-  port: Number(process.env.PORT) || env.port || file.port || 3000,
-  // Only this machine can reach the server (it can use the saved token).
-  host: env.host || file.host || '127.0.0.1',
-  pageFile: rel(env.pageFile || file.pageFile),
-  // Data Center: https://confluence.example.com · Cloud: https://<site>.atlassian.net/wiki
-  confluenceBaseUrl: (env.confluenceBaseUrl || '').replace(/\/+$/, ''),
-  // Empty for Data Center (Bearer PAT). Set for Cloud (Basic auth = email:api_token).
-  confluenceEmail: env.confluenceEmail || '',
-  // Empty = the git repo this server is inside.
-  repoRoot: rel(env.repoRoot),
-  // Which top-level folders count as apps. * matches anything, e.g. "*-app" → web-app, admin-app.
-  appPattern: env.appPattern || file.appPattern || '*',
-  parentsFile: rel(env.parentsFile || 'parents.json'),
-  // Gitignored file holding CONFLUENCE_TOKEN. Only written to if it already exists.
-  envFile: rel(env.envFile || '.env'),
+  fake: Boolean(settings.fake),        // start the fake repo and fake Confluence first
+  port: Number(process.env.PORT) || settings.port,
+  host: settings.host,                 // 127.0.0.1 = only this computer can reach the server
+  publicDir: fromHere(settings.publicDir),
+  appPattern: settings.appPattern,     // which top-level folders are apps, e.g. "*-app"
+  repoRoot: fromHere(settings.repoRoot), // empty = the git repo this tool is inside
+  parentsFile: fromHere(settings.parentsFile),
+  envFile: fromHere(settings.envFile),
+  confluenceBaseUrl: settings.confluenceBaseUrl.replace(/\/+$/, ''),
+  confluenceEmail: settings.confluenceEmail, // empty for Data Center; your Atlassian email for Cloud
 };
