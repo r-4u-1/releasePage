@@ -47,16 +47,26 @@ npm run fake
 
 Open **http://localhost:3000/** and:
 
-1. Paste the token **`demo-token`**.
+1. Paste any token, e.g. `test`. The fake Confluence accepts every token.
 2. Pick **app-a** or **app-b**. The parent page ID fills in by itself.
 3. Enter a **Version** (e.g. `1.0.0`) and a **Date**.
 4. Check the list of changes, then click **Create page**.
-5. Click **open in Confluence** to see the page the fake Confluence made.
+5. Click **open in Confluence** to see the page the fake Confluence wrote.
 
-| Fake app | Fake parent page ID | Tags |
+| Fake app | Parent page ID filled in | Tags |
 |---|---|---|
-| `app-a` | `100001` (App A releases) | `app-a-1-OLD` / `app-a-1-NEW`, `app-a-2-OLD` / `app-a-2-NEW` |
-| `app-b` | `100002` (App B releases) | `app-b-1-OLD` / `app-b-1-NEW` |
+| `app-a` | `100001` | `app-a-1-OLD` / `app-a-1-NEW`, `app-a-2-OLD` / `app-a-2-NEW` |
+| `app-b` | `100002` | `app-b-1-OLD` / `app-b-1-NEW` |
+
+The fake Confluence doesn't check anything. It prints what it gets in the terminal and says yes:
+
+| Call | The fake Confluence |
+|---|---|
+| Check the token | prints the token, accepts it ("Authenticated as user") |
+| Check the parent page | prints the page ID, accepts any number (title "Fake page <id>") |
+| Create the page | writes the page's HTML, exactly as it would be sent to Confluence, to `server/.fake/pages/<id>.html` |
+
+The created file shows the a11y checkboxes as raw text such as "1incomplete", because browsers don't know Confluence's checkbox tags.
 
 All fake data lives in `server/.fake/`, which git ignores. To start again from fresh fake data:
 
@@ -64,7 +74,6 @@ All fake data lives in `server/.fake/`, which git ignores. To start again from f
 npm run fake -- --reset
 ```
 
-The fake Confluence keeps created pages only in memory, so they are gone after a restart.
 
 ---
 
@@ -253,7 +262,7 @@ Everything is in [`server/config.json`](server/config.json). The top-level value
 | `envFile` | The file the token is read from and saved to. |
 | `confluenceBaseUrl` | Confluence address. Data Center: `https://confluence.your-company.com`. Cloud: `https://<site>.atlassian.net/wiki`. |
 | `confluenceEmail` | Empty for Data Center (the token is sent as `Bearer`). For Cloud, the Atlassian account email that owns the API token. |
-| `fake` | `true` starts the fake repo and fake Confluence first. |
+| `fake` | `true` creates the fake repo and starts the fake Confluence first. |
 
 ---
 
@@ -287,7 +296,7 @@ server/
 ├── git.js              Lists apps and tags, reads the git log
 ├── confluence.js       Confluence REST calls, and the release page's content
 ├── storage.js          Reads and saves parents.json and the token in .env
-├── fake.js             Fake monorepo + fake Confluence for --fake
+├── fake.js             Fake monorepo + a fake Confluence that prints what it gets, for --fake
 ├── parents.json        Saved app → parent page IDs (created on first page; commit it)
 ├── .env                Your saved token (you create it; gitignored)
 └── .fake/              Generated fake data (gitignored)
