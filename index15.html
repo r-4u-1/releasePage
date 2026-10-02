@@ -168,7 +168,7 @@
       color:var(--label-f); background:var(--bg-card); letter-spacing:0.05em;
     }
 
-    select, input[type="text"], input[type="email"], textarea {
+    select, input[type="text"], input[type="password"], input[type="email"], textarea {
       width:100%; background:var(--bg-input);
       border:1px solid var(--border); border-radius:3px;
       color:var(--text-input); font-family:'DM Sans',sans-serif;
@@ -191,9 +191,21 @@
       color:var(--label-f); background:var(--bg-card); letter-spacing:0.05em;
     }
     select option { background:#1A0008; color:#FFD0D0; }
+    select:disabled { opacity:0.5; cursor:not-allowed; }
+
+    /* release changes preview */
+    .changes { grid-column:1 / -1; margin:-0.4rem 0 1.4rem; }
+    .changes-sum { font-size:0.75rem; color:var(--label); margin-bottom:0.5rem; }
+    .changes-sum.err { color:var(--err-label); }
+    .changes-scroll { max-height:16rem; overflow:auto; border:1px solid var(--border); border-radius:3px; }
+    .changes-table { width:100%; border-collapse:collapse; font-size:0.78rem; color:var(--text-input); }
+    .changes-table th { position:sticky; top:0; background:var(--bg-input-f); color:var(--label-f); font-weight:600; text-align:left; padding:0.45rem 0.7rem; }
+    .changes-table td { padding:0.4rem 0.7rem; border-top:1px solid var(--border); vertical-align:top; }
+    .changes-table td:first-child { white-space:nowrap; }
+    .changes-table .pr-num { color:var(--label); margin-left:0.35rem; }
     textarea { resize:none; height:84px; line-height:1.6; padding-top:0.85rem; }
 
-    select:focus, input[type="text"]:focus, input[type="email"]:focus, textarea:focus {
+    select:focus, input[type="text"]:focus, input[type="password"]:focus, input[type="email"]:focus, textarea:focus {
       border-color:var(--border-f);
       box-shadow:0 0 0 3px rgba(192,0,26,0.12),0 0 16px rgba(192,0,26,0.08);
       background:var(--bg-input-f);
@@ -229,16 +241,16 @@
     .field.is-valid textarea { border-color:rgba(192,0,26,0.6); background:rgba(192,0,26,0.08); }
 
     /* ─────────────────────────────────────────────────────────────────────────
-       VERIFY FIELD  (token, path, other-name)
+       VERIFY FIELD  (token, parent page ID)
        — opt-in with class .verify-field; manages its own badge & spinner
     ───────────────────────────────────────────────────────────────────────── */
-    .verify-field input[type="text"] { padding-right:2.6rem; }
+    .verify-field input { padding-right:2.6rem; }
 
     /* ok state */
-    .verify-field.vf-ok input[type="text"] { border-color:var(--ok); background:rgba(34,197,94,0.07); box-shadow:0 0 0 3px rgba(34,197,94,0.12); }
+    .verify-field.vf-ok input { border-color:var(--ok); background:rgba(34,197,94,0.07); box-shadow:0 0 0 3px rgba(34,197,94,0.12); }
     .verify-field.vf-ok label { color:var(--ok-label); }
     /* fail state */
-    .verify-field.vf-fail input[type="text"] { border-color:var(--err); background:rgba(255,0,0,0.06); box-shadow:0 0 0 3px rgba(255,0,0,0.10); }
+    .verify-field.vf-fail input { border-color:var(--err); background:rgba(255,0,0,0.06); box-shadow:0 0 0 3px rgba(255,0,0,0.10); }
     .verify-field.vf-fail label { color:var(--err-label); }
 
     @keyframes fieldShake {
@@ -328,50 +340,20 @@
     .cal-today-btn { background:none; border:1px solid rgba(192,0,26,0.3); color:rgba(220,60,60,0.85); font-family:'DM Sans',sans-serif; font-size:0.72rem; letter-spacing:0.06em; padding:4px 14px; border-radius:3px; cursor:pointer; transition:background .12s,color .12s; }
     .cal-today-btn:hover { background:rgba(192,0,26,0.12); color:#ff4444; }
 
-    /* ─────────────────────────────────────────────────────────────────────────
-       "OTHER" EXPANSION
-    ───────────────────────────────────────────────────────────────────────── */
-    .other-wrap {
-      grid-column:1 / -1;
-      display:grid; grid-template-columns:1fr 1fr; gap:0 1rem;
-      /* overflow:visible so floated labels above fields are not clipped */
-      overflow:visible;
-      /* collapse by scaling + fading; no height clipping */
-      opacity:0;
-      transform:translateY(-6px) scaleY(0.92);
-      transform-origin:top center;
+    /* hint under a field (hidden while an error is showing) */
+    .field-hint {
+      position:absolute; bottom:-1.1rem; left:0;
+      font-size:0.66rem; color:var(--label); font-weight:400;
       pointer-events:none;
-      /* hide collapsed fields from layout without overflow:hidden */
-      visibility:hidden;
-      max-height:0;
-      margin-top:0;
-      transition:
-        opacity      .35s ease .05s,
-        transform    .35s ease .05s,
-        visibility   0s linear .4s,
-        max-height   .42s cubic-bezier(0.4,0,0.2,1),
-        margin-top   .35s ease .05s;
     }
-    .other-wrap.open {
-      opacity:1;
-      transform:translateY(0) scaleY(1);
-      pointer-events:auto;
-      visibility:visible;
-      max-height:400px;   /* generous — fields + label overflow */
-      margin-top:0.5rem;
-      padding-top:0.8rem; /* space for floated labels above first row */
-      transition:
-        opacity    .35s ease .05s,
-        transform  .35s ease .05s,
-        visibility 0s linear 0s,
-        max-height .42s cubic-bezier(0.4,0,0.2,1),
-        margin-top .35s ease .05s;
-    }
-    .other-wrap::before {
-      content:''; grid-column:1/-1; height:1px;
-      background:linear-gradient(90deg,rgba(192,0,26,0.4),transparent);
-      margin-bottom:0.6rem;
-    }
+    .field.has-error .field-hint, .field.vf-fail .field-hint { display:none; }
+
+    /* "using the saved token" line, in place of the token field */
+    .token-saved { grid-column:1 / -1; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.4rem; font-size:0.8rem; color:var(--text-input); }
+    .token-saved[hidden] { display:none; }
+    .token-saved-dot { width:8px; height:8px; border-radius:50%; background:var(--ok); box-shadow:0 0 6px var(--ok); }
+    .token-saved-btn { background:none; border:none; padding:0; color:var(--label-f); font:inherit; text-decoration:underline; cursor:pointer; }
+    .token-saved-btn:hover { color:var(--red-hot); }
 
     /* ─────────────────────────────────────────────────────────────────────────
        SUBMIT ROW
@@ -391,6 +373,7 @@
     .status-msg { font-size:0.8rem; font-weight:400; min-height:1rem; opacity:0; transition:opacity .25s ease; }
     .status-msg.ok  { color:#FF6B6B; opacity:1; }
     .status-msg.err { color:#FF4444; opacity:1; }
+    .status-msg a { color:inherit; text-decoration:underline; }
 
     /* ─────────────────────────────────────────────────────────────────────────
        FOOTER BAR
@@ -415,7 +398,7 @@
       .hero-right::before { display:none; }
     }
     @media (max-width:640px) {
-      .other-wrap { grid-template-columns:1fr; }
+      .form-grid { grid-template-columns:1fr; }
     }
 
     /* ─────────────────────────────────────────────────────────────────────────
@@ -580,34 +563,56 @@
   ═══════════════════════════════════════════════════════════════════════════ -->
   <div class="hero-right">
     <div class="form-card">
-      <span class="form-tag">Request form</span>
-      <h1 class="form-title">Submit your request</h1>
-      <p class="form-sub">All fields are required. We'll process your submission promptly.</p>
+      <span class="form-tag">Release notes</span>
+      <h1 class="form-title">Create a release page</h1>
+      <p class="form-sub">Lists every merged change between two tags of an app and publishes it as a Confluence page.</p>
       <div class="form-rule"></div>
 
       <form id="mainForm" novalidate>
         <div class="form-grid">
 
-          <!-- TOKEN — verify field -->
+          <!-- TOKEN — verify field (Confluence personal access token) -->
           <div class="field full-width verify-field no-badge" id="f-token">
-            <label for="token">Token</label>
-            <input type="text" id="token" name="token" autocomplete="off" spellcheck="false"/>
+            <label for="token">Confluence token</label>
+            <input type="password" id="token" name="token" autocomplete="new-password" spellcheck="false"/>
             <span class="err-msg" id="e-token"></span>
+            <span class="field-hint" id="h-token"></span>
             <span class="vf-badge" id="badge-token"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" fill="currentColor"/><path class="vf-check" d="M3.5 7l2.3 2.3 4.7-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
             <span class="vf-spinner" id="spinner-token"></span>
           </div>
 
-          <!-- PATH — verify field -->
-          <div class="field full-width verify-field no-badge" id="f-apipath">
-            <label for="apipath">Path</label>
-            <input type="text" id="apipath" name="apipath" autocomplete="off" spellcheck="false"/>
-            <span class="err-msg" id="e-apipath"></span>
-            <span class="vf-badge" id="badge-apipath"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" fill="currentColor"/><path class="vf-check" d="M3.5 7l2.3 2.3 4.7-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-            <span class="vf-spinner" id="spinner-apipath"></span>
+          <!-- Shown instead of the token field when the server has a valid token in .env -->
+          <div class="token-saved" id="token-saved" hidden>
+            <span class="token-saved-dot" aria-hidden="true"></span>
+            <span id="token-saved-text">Using the token saved in .env</span>
+            <button type="button" class="token-saved-btn" id="token-change">Use a different token</button>
           </div>
 
+          <!-- APP — top-level folder in the monorepo -->
+          <div class="field full-width" id="f-app">
+            <label for="app">App</label>
+            <select id="app" name="app"><option value="">Loading apps…</option></select>
+            <span class="err-msg" id="e-app"></span>
+          </div>
+
+          <!-- PARENT PAGE ID — filled from the app's saved parent, verify field (needs a verified token) -->
+          <div class="field full-width verify-field no-badge" id="f-pageid">
+            <label for="pageid">Parent page ID</label>
+            <input type="text" id="pageid" name="pageid" inputmode="numeric" autocomplete="off" spellcheck="false"/>
+            <span class="err-msg" id="e-pageid"></span>
+            <span class="field-hint" id="h-pageid"></span>
+            <span class="vf-badge" id="badge-pageid"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" fill="currentColor"/><path class="vf-check" d="M3.5 7l2.3 2.3 4.7-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <span class="vf-spinner" id="spinner-pageid"></span>
+          </div>
+
+          <!-- VERSION -->
+          <div class="field" id="f-version">
+            <label for="version">Version</label>
+            <input type="text" id="version" name="version" maxlength="50" autocomplete="off" spellcheck="false"/>
+            <span class="err-msg" id="e-version"></span>
+          </div>
           <!-- DATE — custom calendar, no-badge (icon already turns green) -->
-          <div class="field full-width no-badge" id="f-eventdate">
+          <div class="field no-badge" id="f-eventdate">
             <label for="eventdate">Date <span class="date-fmt">YYYY-MM-DD</span></label>
             <div class="date-wrap">
               <input type="text" id="eventdate" name="eventdate" inputmode="numeric" maxlength="10" autocomplete="off" spellcheck="false"/>
@@ -628,48 +633,31 @@
             <span class="err-msg" id="e-eventdate"></span>
           </div>
 
-          <!-- 5 FREE-TEXT FIELDS -->
-          <div class="field" id="f-field1"><label for="field1">Reference</label><input type="text" id="field1" name="field1"/><span class="err-msg" id="e-field1"></span></div>
-          <div class="field" id="f-field2"><label for="field2">Department</label><input type="text" id="field2" name="field2"/><span class="err-msg" id="e-field2"></span></div>
-          <div class="field" id="f-field3"><label for="field3">Project</label><input type="text" id="field3" name="field3"/><span class="err-msg" id="e-field3"></span></div>
-          <div class="field" id="f-field4"><label for="field4">Version</label><input type="text" id="field4" name="field4"/><span class="err-msg" id="e-field4"></span></div>
-          <div class="field full-width" id="f-field5"><label for="field5">Description</label><input type="text" id="field5" name="field5"/><span class="err-msg" id="e-field5"></span></div>
-
-          <!-- CATEGORY — "Other" expands two sub-fields -->
-          <div class="field full-width" id="f-category">
-            <label for="category">Category</label>
-            <select id="category" name="category">
-              <option value="">— Select —</option>
-              <option value="bug">Bug</option>
-              <option value="feature">Feature</option>
-              <option value="task">Task</option>
-              <option value="other">Other…</option>
-            </select>
-            <span class="err-msg" id="e-category"></span>
+          <!-- TAGS — the release is the app folder's git log between the two tags -->
+          <div class="field" id="f-tagfrom">
+            <label for="tagfrom">From tag (OLD)</label>
+            <select id="tagfrom" name="tagfrom" disabled><option value="">Select an app first</option></select>
+            <span class="err-msg" id="e-tagfrom"></span>
           </div>
-
-          <!-- OTHER expansion -->
-          <div class="other-wrap" id="other-wrap" aria-hidden="true">
-            <!-- verify field -->
-            <div class="field verify-field no-badge" id="f-other-name">
-              <label for="other-name">New category name</label>
-              <input type="text" id="other-name" name="other_name" autocomplete="off" spellcheck="false"/>
-              <span class="err-msg" id="e-other-name"></span>
-              <span class="vf-badge" id="badge-other-name"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" fill="currentColor"/><path class="vf-check" d="M3.5 7l2.3 2.3 4.7-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-              <span class="vf-spinner" id="spinner-other-name"></span>
-            </div>
-            <!-- plain field -->
-            <div class="field" id="f-other-note">
-              <label for="other-note">Category note</label>
-              <input type="text" id="other-note" name="other_note"/>
-              <span class="err-msg" id="e-other-note"></span>
+          <div class="field" id="f-tagto">
+            <label for="tagto">To tag (NEW)</label>
+            <select id="tagto" name="tagto" disabled><option value="">Select an app first</option></select>
+            <span class="err-msg" id="e-tagto"></span>
+          </div>
+          <div class="changes" id="changes" hidden>
+            <p class="changes-sum" id="changes-sum" role="status" aria-live="polite"></p>
+            <div class="changes-scroll">
+              <table class="changes-table">
+                <thead><tr><th scope="col">Author</th><th scope="col">PR</th></tr></thead>
+                <tbody id="changes-body"></tbody>
+              </table>
             </div>
           </div>
 
         </div><!-- /form-grid -->
 
         <div class="submit-row">
-          <button type="submit" class="btn-submit" id="submitBtn">Send request<span class="btn-spinner"></span></button>
+          <button type="submit" class="btn-submit" id="submitBtn">Create page<span class="btn-spinner"></span></button>
           <span class="status-msg" id="statusMsg" role="status" aria-live="polite"></span>
         </div>
       </form>
@@ -708,25 +696,17 @@ function fieldErr(fieldEl, errEl, msg) { fieldEl.classList.remove('is-valid'); f
 function fieldReset(fieldEl, errEl)    { fieldEl.classList.remove('has-error','is-valid'); errEl.textContent = ''; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   SIMPLE FIELD VALIDATION  (blur + submit)
+   VERSION  (blur + submit)
 ═══════════════════════════════════════════════════════════════════════════ */
-const simpleFields = ['field1','field2','field3','field4','field5'];
-
-simpleFields.forEach(id => {
-  const inp = $(id), wrap = $('f-'+id), err = $('e-'+id);
-  inp.addEventListener('blur', () => {
-    inp.value.trim() ? fieldOk(wrap, err) : fieldErr(wrap, err, 'Required');
-    setFilled(inp);
-  });
-  inp.addEventListener('input', () => { if (wrap.classList.contains('has-error')) { inp.value.trim() ? fieldOk(wrap, err) : fieldErr(wrap, err, 'Required'); } setFilled(inp); });
-});
-
-// Category
-$('category').addEventListener('change', () => {
-  const wrap = $('f-category'), err = $('e-category');
-  $('category').value ? fieldOk(wrap, err) : fieldErr(wrap, err, 'Please select a category');
-  setFilled($('category'));
-});
+function validateVersion() {
+  const inp = $('version'), wrap = $('f-version'), err = $('e-version');
+  const ok = !!inp.value.trim();
+  ok ? fieldOk(wrap, err) : fieldErr(wrap, err, 'Version is required');
+  setFilled(inp);
+  return ok;
+}
+$('version').addEventListener('blur', validateVersion);
+$('version').addEventListener('input', () => { if ($('f-version').classList.contains('has-error')) validateVersion(); });
 
 /* ═══════════════════════════════════════════════════════════════════════════
    DATE FIELD — ISO 8601, custom calendar
@@ -813,7 +793,11 @@ $('category').addEventListener('change', () => {
    VERIFY FIELD FACTORY
    Handles onblur + throttled-input verification with spinner, badge, shake
 ═══════════════════════════════════════════════════════════════════════════ */
-function makeVerifyField(fieldId) {
+const API_BASE = ''; // same origin as the Express server
+
+// buildRequest(val) → { url, body } to send, or a string error to show without sending.
+// Server replies { ok: boolean, message?: string }.
+function makeVerifyField(fieldId, buildRequest, { onOk } = {}) {
   const wrap    = $('f-' + fieldId);
   const inp     = $(fieldId);
   const errEl   = $('e-' + fieldId);
@@ -834,54 +818,213 @@ function makeVerifyField(fieldId) {
   function setOk()       { wrap.classList.remove('vf-fail','vf-shake','has-error'); wrap.classList.add('vf-ok');  errEl.textContent=''; showSpinner(false); showBadge(true); }
   function setFail(msg)  { wrap.classList.remove('vf-ok'); showBadge(false); showSpinner(false); wrap.classList.add('vf-fail'); errEl.textContent = msg||'Verification failed';
                            wrap.classList.remove('vf-shake'); void wrap.offsetWidth; wrap.classList.add('vf-shake'); setTimeout(()=>wrap.classList.remove('vf-shake'),450); }
-  function clearState()  { wrap.classList.remove('vf-ok','vf-fail','vf-shake','has-error'); showBadge(false); showSpinner(false); errEl.textContent=''; lastVerified=null; }
+  function clearState()  { wrap.classList.remove('vf-ok','vf-fail','vf-shake','has-error'); showBadge(false); showSpinner(false); errEl.textContent=''; }
 
   async function verify(val) {
     if (!val.trim() || val === lastVerified) return;
-    lastVerified = val;
     if (controller) controller.abort();
+    clearState();
+    const req = buildRequest(val);
+    if (typeof req === 'string') { lastVerified = null; setFail(req); return; }
+    lastVerified = val;
     controller = new AbortController();
-    clearState(); showSpinner(true);
+    showSpinner(true);
     try {
-      const res  = await fetch('https://httpbin.org/post', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({field:fieldId,value:val}), signal:controller.signal });
-      // Demo: odd-length = ok. Replace this predicate with real success logic.
-      res.ok && val.length % 2 !== 0 ? setOk() : setFail('Could not verify ' + fieldId);
-    } catch(e) { if (e.name!=='AbortError') setFail('Request failed'); }
+      const res  = await fetch(API_BASE + req.url, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(req.body), signal:controller.signal });
+      const data = await res.json().catch(() => ({}));
+      if (data.ok) { setOk(); onOk && onOk(data); }
+      else         { setFail(data.message || 'Could not verify'); }
+    } catch(e) { if (e.name!=='AbortError') { lastVerified = null; setFail('Server unreachable'); } }
   }
 
   inp.addEventListener('blur', () => { clearTimeout(throttleTimer); const v=inp.value.trim(); if(v) verify(v); });
   inp.addEventListener('input', () => {
     setFilled(inp);
     const v = inp.value.trim();
-    if (!v) { clearState(); return; }
+    if (!v) { clearTimeout(throttleTimer); if (controller) controller.abort(); clearState(); lastVerified = null; return; }
     clearTimeout(throttleTimer);
     throttleTimer = setTimeout(() => verify(v), THROTTLE_MS);
   });
+
+  // Force a fresh check of the current value (e.g. when a dependency changed).
+  return { recheck() { lastVerified = null; const v = inp.value.trim(); if (v) verify(v); } };
 }
 
-makeVerifyField('token');
-makeVerifyField('apipath');
+// app → saved Confluence parent page ID (from server/parents.json)
+const parents = {};
+
+// Hint under Parent page ID: which page it is, and whether it is saved for the app.
+let verifiedPage = { id: null, title: null };
+function updatePageHint(pageTitle) {
+  const app = $('app').value, id = $('pageid').value.trim(), hint = $('h-pageid');
+  if (pageTitle) verifiedPage = { id, title: pageTitle };
+  else if (verifiedPage.id === id && $('f-pageid').classList.contains('vf-ok')) pageTitle = verifiedPage.title;
+  const parts = [];
+  if (pageTitle) parts.push('“' + pageTitle + '”');
+  if (app && id) {
+    if (parents[app] === id)  parts.push('saved for ' + app);
+    else if (parents[app])    parts.push('replaces the saved parent for ' + app + ' after the page is created');
+    else                      parts.push('will be saved for ' + app + ' after the page is created');
+  }
+  hint.textContent = parts.join(' · ');
+}
+
+const pageField = makeVerifyField('pageid', pageId => {
+  updatePageHint();
+  if (!$('f-token').classList.contains('vf-ok')) return 'Verify the token first';
+  if (!/^\d+$/.test(pageId)) return 'Page ID must be a number';
+  return { url: '/api/verify/page', body: { token: typedToken(), pageId } };
+}, { onOk: data => updatePageHint(data.title) });
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   CATEGORY "OTHER" EXPANSION
+   TOKEN — typed, or the one the server keeps in .env (never sent to the page)
 ═══════════════════════════════════════════════════════════════════════════ */
-(function initOther() {
-  const sel   = $('category');
-  const panel = $('other-wrap');
-  let wired   = false;
+let usingSavedToken = false;
+let tokenCanSave = false;
 
-  sel.addEventListener('change', () => {
-    const isOther = sel.value === 'other';
-    panel.classList.toggle('open', isOther);
-    panel.setAttribute('aria-hidden', String(!isOther));
-    if (isOther) {
-      setTimeout(() => $('other-name') && $('other-name').focus(), 80);
-      if (!wired) { wired = true; makeVerifyField('other-name'); }
-    } else {
-      ['other-name','other-note'].forEach(id => { const el=$(id); if(el){el.value=''; setFilled(el);} });
-      const w=$('f-other-name'); if(w) w.classList.remove('vf-ok','vf-fail','vf-shake','has-error');
-    }
-  });
+// The token to send: nothing when the server should use its saved one.
+function typedToken() { return usingSavedToken ? undefined : $('token').value.trim(); }
+
+function setTokenHint(text) { $('h-token').textContent = text || ''; }
+function defaultTokenHint() {
+  setTokenHint(tokenCanSave ? 'Saved to .env once it is verified' : 'Create server/.env to remember the token');
+}
+
+function showSavedToken(on, text) {
+  usingSavedToken = on;
+  $('token-saved').hidden = !on;
+  $('f-token').hidden = on;
+  if (text) $('token-saved-text').textContent = text;
+  // Dependent checks look at this class, whichever way the token was verified.
+  $('f-token').classList.toggle('vf-ok', on);
+}
+
+makeVerifyField('token', token => ({ url: '/api/verify/token', body: { token } }), {
+  onOk: data => {
+    setTokenHint(data.saved ? 'Saved to .env' : '');
+    pageField.recheck();  // page access depends on the token
+  },
+});
+
+$('token-change').addEventListener('click', () => {
+  showSavedToken(false);
+  defaultTokenHint();
+  $('token').value = ''; setFilled($('token'));
+  $('token').focus();
+  pageField.recheck();
+});
+
+(async function useSavedToken() {
+  try {
+    const res = await fetch(API_BASE + '/api/token');
+    const st  = await res.json();
+    tokenCanSave = !!st.canSave;
+    defaultTokenHint();
+    if (!st.saved) return;
+    // Check the saved token without sending one.
+    const vr = await fetch(API_BASE + '/api/verify/token', { method:'POST', headers:{'Content-Type':'application/json'}, body:'{}' });
+    const v  = await vr.json().catch(() => ({}));
+    if (v.ok) { showSavedToken(true, 'Using the token saved in .env · ' + v.message); pageField.recheck(); }
+    else      { setTokenHint('The token in .env was rejected (' + (v.message || 'error') + ') — paste a new one'); }
+  } catch { /* server unreachable: the field stays as it is */ }
+})();
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   APP + TAGS → RELEASE CHANGES
+   App = top-level folder in the monorepo. Tags: <app>-<n>-OLD / <app>-<n>-NEW.
+═══════════════════════════════════════════════════════════════════════════ */
+const release = { changes: [] };
+
+(function initRelease() {
+  const appSel = $('app'), fromSel = $('tagfrom'), toSel = $('tagto');
+  const box = $('changes'), sum = $('changes-sum'), body = $('changes-body');
+  let reqId = 0;
+
+  async function getJSON(url) {
+    const res  = await fetch(API_BASE + url);
+    const data = await res.json().catch(() => ({}));
+    if (!data.ok) throw new Error(data.message || 'HTTP ' + res.status);
+    return data;
+  }
+
+  function fillSelect(sel, items, placeholder) {
+    sel.innerHTML = '';
+    sel.append(new Option(placeholder, ''));
+    items.forEach(v => sel.append(new Option(v, v)));
+  }
+
+  function showSummary(text, isErr) { box.hidden = false; sum.textContent = text; sum.classList.toggle('err', !!isErr); }
+  function clearChanges() { release.changes = []; body.innerHTML = ''; box.hidden = true; }
+
+  function renderChanges(changes) {
+    body.innerHTML = '';
+    changes.forEach(c => {
+      const tr = document.createElement('tr');
+      const who = document.createElement('td'); who.textContent = c.author;
+      const pr  = document.createElement('td'); pr.textContent = c.title; pr.title = c.title;
+      if (c.pr) { const n = document.createElement('span'); n.className = 'pr-num'; n.textContent = '#' + c.pr; pr.append(n); }
+      tr.append(who, pr); body.append(tr);
+    });
+  }
+
+  async function loadApps() {
+    try {
+      const { apps } = await getJSON('/api/apps');
+      apps.forEach(a => { if (a.parentId) parents[a.name] = a.parentId; });
+      fillSelect(appSel, apps.map(a => a.name), apps.length ? '— Select app —' : 'No apps found');
+    } catch (e) { fillSelect(appSel, [], 'Could not load apps'); fieldErr($('f-app'), $('e-app'), e.message); }
+  }
+
+  async function loadTags(app) {
+    clearChanges();
+    [fromSel, toSel].forEach(s => { s.disabled = true; fillSelect(s, [], app ? 'Loading tags…' : 'Select an app first'); setFilled(s); });
+    if (!app) return;
+    try {
+      const { tags } = await getJSON('/api/apps/' + encodeURIComponent(app) + '/tags');
+      if (!tags.length) { fieldErr($('f-app'), $('e-app'), `No ${app}-<n>-OLD / -NEW tags found`); return; }
+      fieldOk($('f-app'), $('e-app'));
+      const olds = tags.filter(t => t.kind === 'OLD').map(t => t.name);
+      const news = tags.filter(t => t.kind === 'NEW').map(t => t.name);
+      fillSelect(fromSel, olds, '— Select —');
+      fillSelect(toSel,   news, '— Select —');
+      // Default to the newest release pair
+      if (olds[0]) fromSel.value = olds[0];
+      if (news[0]) toSel.value   = news[0];
+      [fromSel, toSel].forEach(s => { s.disabled = false; setFilled(s); });
+      loadChanges();
+    } catch (e) { fieldErr($('f-app'), $('e-app'), e.message); }
+  }
+
+  async function loadChanges() {
+    const app = appSel.value, from = fromSel.value, to = toSel.value;
+    clearChanges();
+    if (!app || !from || !to) return;
+    const id = ++reqId;
+    showSummary('Reading git log…');
+    try {
+      const q = new URLSearchParams({ from, to });
+      const { changes } = await getJSON('/api/apps/' + encodeURIComponent(app) + '/changes?' + q);
+      if (id !== reqId) return;  // a newer selection replaced this one
+      release.changes = changes;
+      renderChanges(changes);
+      showSummary(changes.length
+        ? `${changes.length} change${changes.length === 1 ? '' : 's'} in ${app} between ${from} and ${to}`
+        : `No changes in ${app} between ${from} and ${to}`);
+    } catch (e) { if (id === reqId) showSummary(e.message, true); }
+  }
+
+  // Picking an app fills in its saved parent page (the user can still type another one).
+  function fillParent(app) {
+    const inp = $('pageid');
+    inp.value = parents[app] || '';
+    inp.dispatchEvent(new Event('input'));  // runs the normal verify flow
+    updatePageHint();
+  }
+
+  appSel.addEventListener('change', () => { fillParent(appSel.value); loadTags(appSel.value); });
+  fromSel.addEventListener('change', loadChanges);
+  toSel.addEventListener('change', loadChanges);
+  loadApps();
 })();
 
 /* ═══════════════════════════════════════════════════════════════════════════
@@ -889,41 +1032,47 @@ makeVerifyField('apipath');
 ═══════════════════════════════════════════════════════════════════════════ */
 $('mainForm').addEventListener('submit', async e => {
   e.preventDefault();
-  let valid = true;
-
-  // simple fields
-  simpleFields.forEach(id => {
-    const inp=document.getElementById(id), wrap=$('f-'+id), err=$('e-'+id);
-    if (!inp.value.trim()) { fieldErr(wrap,err,'Required'); valid=false; } else fieldOk(wrap,err);
-    setFilled(inp);
-  });
-
-  // category
-  const cat=$('category'), catW=$('f-category'), catE=$('e-category');
-  if (!cat.value) { fieldErr(catW,catE,'Please select a category'); valid=false; } else fieldOk(catW,catE);
+  let valid = validateVersion();
 
   // date
-  const dateInp=$('eventdate'), dateW=$('f-eventdate'), dateE=$('e-eventdate');
-  if (!dateInp.value.trim()) { fieldErr(dateW,dateE,'Date is required'); valid=false; }
+  const dateW=$('f-eventdate'), dateE=$('e-eventdate');
+  if (!/^\d{4}-\d{2}-\d{2}$/.test($('eventdate').value.trim())) { fieldErr(dateW,dateE,'Date is required (YYYY-MM-DD)'); valid=false; }
+
+  // app + tags
+  [['app','Select an app'],['tagfrom','Select the OLD tag'],['tagto','Select the NEW tag']].forEach(([id,msg]) => {
+    if (!$(id).value) { fieldErr($('f-'+id),$('e-'+id),msg); valid=false; }
+  });
+
+  // token + parent page must have passed their Confluence checks
+  [['token','Verify the token first'],['pageid','Enter a parent page the token can reach']].forEach(([id,msg]) => {
+    const w=$('f-'+id);
+    if (!w.classList.contains('vf-ok')) { w.classList.add('vf-fail'); $('e-'+id).textContent = $('e-'+id).textContent || msg; valid=false; }
+  });
 
   if (!valid) return;
 
   const btn=$('submitBtn'), st=$('statusMsg');
-  const isOther = cat.value==='other';
-  const payload = {};
-  [...simpleFields,'token','apipath','eventdate','category'].forEach(id => { payload[id]=document.getElementById(id).value.trim(); });
-  if (isOther) { payload.other_name=$('other-name').value.trim(); payload.other_note=$('other-note').value.trim(); }
+  const payload = {
+    token:   typedToken(),
+    app:     $('app').value,
+    pageId:  $('pageid').value.trim(),
+    version: $('version').value.trim(),
+    date:    $('eventdate').value.trim(),
+    from:    $('tagfrom').value,
+    to:      $('tagto').value,
+  };
 
   btn.disabled=true; btn.classList.add('loading'); st.textContent=''; st.className='status-msg';
   try {
-    const res = await fetch('https://httpbin.org/post',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    if (!res.ok) throw new Error('HTTP '+res.status);
-    st.textContent='Request submitted successfully.'; st.classList.add('ok');
-    $('mainForm').reset();
-    document.querySelectorAll('.field').forEach(f => f.classList.remove('is-valid','has-error','filled','vf-ok','vf-fail'));
-    document.querySelectorAll('.err-msg').forEach(e => e.textContent='');
-    $('other-wrap').classList.remove('open');
-  } catch(ex) { st.textContent='Submission failed — '+ex.message; st.classList.add('err'); }
+    const res = await fetch(API_BASE + '/api/release',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.ok) throw new Error(data.message || 'HTTP '+res.status);
+    parents[payload.app] = payload.pageId;  // the server saved it too
+    updatePageHint();
+    st.textContent = 'Created “' + data.title + '” — ';
+    const a = document.createElement('a'); a.href = data.url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'open in Confluence';
+    st.append(a); st.classList.add('ok');
+  } catch(ex) { st.textContent='Could not create the page — '+ex.message; st.classList.add('err'); }
   finally     { btn.disabled=false; btn.classList.remove('loading'); }
 });
 
