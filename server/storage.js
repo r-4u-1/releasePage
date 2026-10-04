@@ -1,23 +1,7 @@
-// The two small files the server keeps (paths from config.json):
-//   parents.json — app name → Confluence parent page ID. Commit it so the whole team shares it.
-//   .env         — CONFLUENCE_TOKEN=… Gitignored, and only written if you created the file.
+// The token in .env (path from config.json): CONFLUENCE_TOKEN=…
+// Gitignored, and only written if you created the file.
 const fs = require('node:fs');
 const config = require('./config');
-
-// ── Parent pages ───────────────────────────────────────────────────────────
-
-function readParents() {
-  if (!fs.existsSync(config.parentsFile)) return {};
-  return JSON.parse(fs.readFileSync(config.parentsFile, 'utf8'));
-}
-
-function saveParent(app, pageId) {
-  const parents = { ...readParents(), [app]: pageId };
-  const sorted = Object.fromEntries(Object.entries(parents).sort());
-  fs.writeFileSync(config.parentsFile, JSON.stringify(sorted, null, 2) + '\n');
-}
-
-// ── Token ──────────────────────────────────────────────────────────────────
 
 const TOKEN_LINE = /^\s*CONFLUENCE_TOKEN\s*=\s*(.*?)\s*$/;
 
@@ -48,4 +32,4 @@ function saveToken(token) {
   return true;
 }
 
-module.exports = { readParents, saveParent, canSaveToken, readToken, saveToken };
+module.exports = { canSaveToken, readToken, saveToken };

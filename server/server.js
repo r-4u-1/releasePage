@@ -6,6 +6,7 @@ const { createApp, HttpError, sendFile } = require('./web');
 const git = require('./git');
 const confluence = require('./confluence');
 const storage = require('./storage');
+const { runReleaseScript } = require('./release');
 
 // Only answer this computer's own page: not other websites, not other host names.
 // That way nobody else can use the token saved in .env.
@@ -24,17 +25,11 @@ const app = createApp({ before: onlyOwnPage });
 
 const text = value => (typeof value === 'string' ? value.trim() : '');
 
-// The token typed in the form, or else the one saved in .env.
+// The token typed in the form, or else the verified/saved one.
 function tokenFrom(body) {
-  const token = text(body?.token) || storage.readToken();
+  const token = text(body?.token) || process.env.CONFLUENCE_TOKEN;
   if (!token) throw new HttpError(400, 'Token is required');
   return token;
-}
-
-function pageIdFrom(body) {
-  const pageId = text(body?.pageId);
-  if (!/^\d+$/.test(pageId)) throw new HttpError(400, 'Page ID must be a number');
-  return pageId;
 }
 
 // ── The form page ──────────────────────────────────────────────────────────
@@ -59,67 +54,54 @@ app.get('/api/token', () => ({
 }));
 
 // Checks the typed token, or the saved one when none is sent.
-// A typed token that works is saved to .env.
+// A token that works becomes CONFLUENCE_TOKEN for the release script. A typed one is saved to .env too.
 app.post('/api/verify/token', async req => {
   const typed = text(req.body?.token);
-  const user = await confluence.currentUser(tokenFrom(req.body));
+  const token = tokenFrom(req.body);
+  const user = await confluence.currentUser(token);
+  process.env.CONFLUENCE_TOKEN = token;
   const saved = typed ? storage.saveToken(typed) : true;
   if (typed && saved) console.log(`[token] saved to ${config.envFile}`);
   return { ok: true, message: `Authenticated as ${user}`, saved };
 });
 
-// ── Parent page ────────────────────────────────────────────────────────────
+// ── Apps and tags ──────────────────────────────────────────────────────────
 
-// The parent page is fine if the token can open it.
-app.post('/api/verify/page', async req => {
-  const page = await confluence.getPage(pageIdFrom(req.body), tokenFrom(req.body));
-  return { ok: true, title: page.title };
-});
-
-// ── Apps, tags, changes ────────────────────────────────────────────────────
-
-app.get('/api/apps', () => {
-  const parents = storage.readParents();
-  const apps = git.listApps().map(name => ({ name, parentId: parents[name] || null }));
-  return { ok: true, apps };
-});
+app.get('/api/apps', () => ({
+  ok: true,
+  apps: git.listApps(),
+}));
 
 app.get('/api/apps/:app/tags', req => ({
   ok: true,
   tags: git.listTags(req.params.app),
 }));
 
-app.get('/api/apps/:app/changes', req => ({
-  ok: true,
-  changes: git.listChanges(req.params.app, req.query.from, req.query.to),
-}));
+// ── Release ────────────────────────────────────────────────────────────────
 
-// ── Create the release page ────────────────────────────────────────────────
-
-// Reads the changes between the two tags (again, so the page always matches them),
-// creates the page under the parent, and remembers the parent for the app.
+// Runs the release script with the two tags, the app, the version and the date.
 app.post('/api/release', async req => {
   const body = req.body || {};
-  const token = tokenFrom(body);
-  const pageId = pageIdFrom(body);
+  process.env.CONFLUENCE_TOKEN = tokenFrom(body);
   const version = text(body.version);
   const date = text(body.date);
   if (!version || version.length > 50) throw new HttpError(400, 'Version is required (max 50 characters)');
   if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) throw new HttpError(400, 'Date must be YYYY-MM-DD');
 
   const { app: appName, from, to } = body;
-  const changes = git.listChanges(appName, from, to); // also checks the app and the tags
-  const parent = await confluence.getPage(pageId, token);
-  const page = await confluence.createReleasePage({ token, parent, version, date, app: appName, from, to, changes });
+  const tags = git.listTags(appName); // also checks the app
+  if (!tags.includes(from) || !tags.includes(to)) throw new HttpError(400, `Pick two tags that belong to ${appName}`);
 
-  storage.saveParent(appName, pageId);
-  console.log(`[release] created "${page.title}" (${changes.length} changes) under ${pageId}`);
-  return { ok: true, ...page, changes: changes.length };
+  const output = await runReleaseScript({ from, to, app: appName, version, date });
+  return { ok: true, output };
 });
 
 // ── Start ──────────────────────────────────────────────────────────────────
 
 async function start() {
+  // A token saved in .env is ready for the release script from the start.
+  const saved = storage.readToken();
+  if (saved) process.env.CONFLUENCE_TOKEN = saved;
   if (config.fake) await require('./fake').start(config);
   if (!config.confluenceBaseUrl) console.warn(`[warn] No confluenceBaseUrl for "${config.name}" in config.json`);
   app.listen(config.port, config.host, () => {

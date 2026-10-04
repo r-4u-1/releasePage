@@ -1,4 +1,4 @@
-// Reads apps, tags and changes from git.
+// Reads apps and tags from git.
 // Every git command runs inside the app's folder, like `cd web-app && git ...`.
 const fs = require('node:fs');
 const path = require('node:path');
@@ -54,42 +54,4 @@ function listTags(app) {
     .sort((a, b) => number(b) - number(a) || a.localeCompare(b));
 }
 
-// Merge commits keep the PR title on the first line of the body (GitHub, GitLab, Bitbucket).
-// Squash and direct commits use the subject. A trailing "(#123)" is dropped: the number is kept separately.
-function prTitle(subject, body, isMerge) {
-  const firstBodyLine = body.split('\n').map(line => line.trim()).find(Boolean);
-  return ((isMerge && firstBodyLine) || subject).replace(/\s*\(#\d+\)\s*$/, '');
-}
-
-function prNumber(message) {
-  const m = /pull request #(\d+)|\(#(\d+)\)\s*$|See merge request [^!]*!(\d+)/.exec(message);
-  return m ? Number(m[1] || m[2] || m[3]) : null;
-}
-
-const FIELD = '\x1f';  // separates fields in the git log output
-const COMMIT = '\x1e'; // separates commits
-
-// The changes between two of the app's tags that touched its folder, one row per merged PR:
-//   git log --first-parent <from>..<to> -- .
-function listChanges(app, from, to) {
-  const tags = listTags(app);
-  if (!tags.includes(from) || !tags.includes(to)) throw new HttpError(400, `Pick two tags that belong to ${app}`);
-
-  const folder = appFolder(app);
-  const format = ['%P', '%an', '%s', '%b'].join(FIELD) + COMMIT;
-  const log = git(['log', '--first-parent', `--format=${format}`, `${from}..${to}`, '--', '.'], folder);
-
-  return log.split(COMMIT).map(commit => commit.trim()).filter(Boolean).map(commit => {
-    const [parents, author, subject, body] = commit.split(FIELD);
-    // A merge commit's second parent is the merged branch. Its author wrote the PR;
-    // the merge commit's own author only clicked "merge".
-    const mergedBranch = parents.split(' ')[1];
-    return {
-      author: mergedBranch ? git(['log', '-1', '--format=%an', mergedBranch], folder).trim() : author,
-      title: prTitle(subject, body, Boolean(mergedBranch)),
-      pr: prNumber(subject + '\n' + body),
-    };
-  });
-}
-
-module.exports = { listApps, listTags, listChanges };
+module.exports = { repoRoot, listApps, listTags };

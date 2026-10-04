@@ -1,5 +1,5 @@
 'use strict';
-// The release form: checks each field, loads apps, tags and changes, and creates the page.
+// The release form: checks each field, loads apps and tags, and starts the release script.
 
 const $ = id => document.getElementById(id);
 
@@ -27,7 +27,7 @@ async function api(url, body, signal) {
 /* ═══════════════════════════════════════════════════════════════════════════
    FIELD STATES
    Plain fields: is-valid (green check) or has-error (red message).
-   Server-checked fields (token, page ID): vf-ok or vf-fail, see checkedField().
+   The server-checked token field: vf-ok or vf-fail, see checkedField().
 ═══════════════════════════════════════════════════════════════════════════ */
 
 // A field with a value keeps its label floated above it.
@@ -258,35 +258,6 @@ function checkedField(id, request, onOk = () => {}) {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   PARENT PAGE ID — needs a verified token first
-═══════════════════════════════════════════════════════════════════════════ */
-const savedParents = {};                     // app → parent page ID saved on the server
-let checkedPage = { id: null, title: null }; // the last page the server confirmed
-
-// The hint under the field, e.g. "“App A releases” · saved for app-a".
-function updatePageHint() {
-  const app = $('app').value, id = $('pageid').value.trim();
-  const parts = [];
-  if (checkedPage.id === id && $('f-pageid').classList.contains('vf-ok')) parts.push(`“${checkedPage.title}”`);
-  if (app && id) {
-    if (savedParents[app] === id) parts.push(`saved for ${app}`);
-    else if (savedParents[app]) parts.push(`replaces the saved parent for ${app} after the page is created`);
-    else parts.push(`will be saved for ${app} after the page is created`);
-  }
-  $('h-pageid').textContent = parts.join(' · ');
-}
-
-const pageField = checkedField('pageid', pageId => {
-  updatePageHint();
-  if (!$('f-token').classList.contains('vf-ok')) return 'Verify the token first';
-  if (!/^\d+$/.test(pageId)) return 'Page ID must be a number';
-  return { url: '/api/verify/page', body: { token: typedToken(), pageId } };
-}, page => {
-  checkedPage = { id: $('pageid').value.trim(), title: page.title };
-  updatePageHint();
-});
-
-/* ═══════════════════════════════════════════════════════════════════════════
    TOKEN — typed, or the one the server keeps in .env (never sent to the page)
 ═══════════════════════════════════════════════════════════════════════════ */
 let usingSavedToken = false;
@@ -311,12 +282,11 @@ function showSavedToken(on, text) {
   $('token-saved').hidden = !on;
   $('f-token').hidden = on;
   if (text) $('token-saved-text').textContent = text;
-  $('f-token').classList.toggle('vf-ok', on); // the page ID check looks at this
+  $('f-token').classList.toggle('vf-ok', on); // checkAll() looks at this
 }
 
 checkedField('token', token => ({ url: '/api/verify/token', body: { token } }), result => {
   showTokenHint(result.saved ? 'Saved to .env' : '');
-  pageField.recheck(); // page access depends on the token
 });
 
 $('token-change').addEventListener('click', () => {
@@ -325,7 +295,6 @@ $('token-change').addEventListener('click', () => {
   $('token').value = '';
   setFilled($('token'));
   $('token').focus();
-  pageField.recheck();
 });
 
 // On load: use the saved token if the server has one that works.
@@ -338,7 +307,6 @@ $('token-change').addEventListener('click', () => {
     try {
       const result = await api('/api/verify/token', {});
       showSavedToken(true, 'Using the token saved in .env · ' + result.message);
-      pageField.recheck();
     } catch (err) {
       showTokenHint(`The token in .env was rejected (${err.message}) — paste a new one`);
     }
@@ -348,7 +316,7 @@ $('token-change').addEventListener('click', () => {
 })();
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   APP → TAGS → CHANGES
+   APP → TAGS
 ═══════════════════════════════════════════════════════════════════════════ */
 const appSelect = $('app'), fromSelect = $('tagfrom'), toSelect = $('tagto');
 
@@ -359,8 +327,7 @@ function fillSelect(select, values, placeholder) {
 async function loadApps() {
   try {
     const { apps } = await api('/api/apps');
-    for (const app of apps) if (app.parentId) savedParents[app.name] = app.parentId;
-    fillSelect(appSelect, apps.map(app => app.name), apps.length ? '— Select app —' : 'No apps found');
+    fillSelect(appSelect, apps, apps.length ? '— Select app —' : 'No apps found');
   } catch (err) {
     fillSelect(appSelect, [], 'Could not load apps');
     showError('app', err.message);
@@ -368,7 +335,6 @@ async function loadApps() {
 }
 
 async function loadTags(app) {
-  hideChanges();
   for (const select of [fromSelect, toSelect]) {
     select.disabled = true;
     fillSelect(select, [], app ? 'Loading tags…' : 'Select an app first');
@@ -386,73 +352,16 @@ async function loadTags(app) {
     fromSelect.value = olds[0] || '';
     toSelect.value = news[0] || '';
     fromSelect.disabled = toSelect.disabled = false;
-    loadChanges();
   } catch (err) {
     showError('app', err.message);
   }
 }
 
-let changesRequest = 0; // answers to older selections are ignored
-
-function hideChanges() {
-  changesRequest++;
-  $('changes').hidden = true;
-  $('changes-body').replaceChildren();
-}
-
-function showChangesSummary(text, isError = false) {
-  $('changes').hidden = false;
-  $('changes-sum').textContent = text;
-  $('changes-sum').classList.toggle('err', isError);
-}
-
-function changeRow(change) {
-  const row = document.createElement('tr');
-  row.insertCell().textContent = change.author;
-  const pr = row.insertCell();
-  pr.textContent = pr.title = change.title;
-  if (change.pr) {
-    const number = document.createElement('span');
-    number.className = 'pr-num';
-    number.textContent = '#' + change.pr;
-    pr.append(number);
-  }
-  return row;
-}
-
-async function loadChanges() {
-  const app = appSelect.value, from = fromSelect.value, to = toSelect.value;
-  hideChanges();
-  if (!app || !from || !to) return;
-  const request = changesRequest;
-  showChangesSummary('Reading git log…');
-  try {
-    const { changes } = await api(`/api/apps/${encodeURIComponent(app)}/changes?` + new URLSearchParams({ from, to }));
-    if (request !== changesRequest) return;
-    $('changes-body').replaceChildren(...changes.map(changeRow));
-    const n = changes.length;
-    showChangesSummary(n
-      ? `${n} change${n === 1 ? '' : 's'} in ${app} between ${from} and ${to}`
-      : `No changes in ${app} between ${from} and ${to}`);
-  } catch (err) {
-    if (request === changesRequest) showChangesSummary(err.message, true);
-  }
-}
-
-// Picking an app fills in its saved parent page (it can still be changed) and loads its tags.
-appSelect.addEventListener('change', () => {
-  const app = appSelect.value;
-  $('pageid').value = savedParents[app] || '';
-  $('pageid').dispatchEvent(new Event('input')); // checks it like typing would
-  updatePageHint();
-  loadTags(app);
-});
-fromSelect.addEventListener('change', loadChanges);
-toSelect.addEventListener('change', loadChanges);
+appSelect.addEventListener('change', () => loadTags(appSelect.value));
 loadApps();
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   CREATE PAGE
+   CREATE PAGE — the server runs the release script with these values
 ═══════════════════════════════════════════════════════════════════════════ */
 
 // Marks every missing or unchecked field. True when everything is ready.
@@ -466,11 +375,9 @@ function checkAll() {
   for (const [id, message] of selects) {
     if (!$(id).value) { showError(id, message); ok = false; }
   }
-  const checked = [['token', 'Verify the token first'], ['pageid', 'Enter a parent page the token can reach']];
-  for (const [id, message] of checked) {
-    if ($('f-' + id).classList.contains('vf-ok')) continue;
-    $('f-' + id).classList.add('vf-fail');
-    $('e-' + id).textContent ||= message;
+  if (!$('f-token').classList.contains('vf-ok')) {
+    $('f-token').classList.add('vf-fail');
+    $('e-token').textContent ||= 'Verify the token first';
     ok = false;
   }
   return ok;
@@ -483,7 +390,6 @@ $('mainForm').addEventListener('submit', async event => {
   const release = {
     token: typedToken(),
     app: appSelect.value,
-    pageId: $('pageid').value.trim(),
     version: $('version').value.trim(),
     date: $('eventdate').value.trim(),
     from: fromSelect.value,
@@ -492,20 +398,24 @@ $('mainForm').addEventListener('submit', async event => {
   const button = $('submitBtn'), status = $('statusMsg');
   button.disabled = true;
   button.classList.add('loading');
-  status.textContent = '';
+  status.textContent = 'Running the release script…';
   status.className = 'status-msg';
 
   try {
-    const page = await api('/api/release', release);
-    savedParents[release.app] = release.pageId; // the server saved it too
-    updatePageHint();
-    const link = Object.assign(document.createElement('a'), {
-      href: page.url, target: '_blank', rel: 'noopener', textContent: 'open in Confluence',
-    });
-    status.replaceChildren(`Created “${page.title}” — `, link);
+    const { output } = await api('/api/release', release);
+    // The script's last line, as a link when it is the page's address.
+    const last = output.split('\n').pop().trim();
+    if (/^https?:\/\/\S+$/.test(last)) {
+      const link = Object.assign(document.createElement('a'), {
+        href: last, target: '_blank', rel: 'noopener', textContent: 'open in Confluence',
+      });
+      status.replaceChildren('Release page created — ', link);
+    } else {
+      status.textContent = last || 'Release script finished';
+    }
     status.classList.add('ok');
   } catch (err) {
-    status.textContent = 'Could not create the page — ' + err.message;
+    status.textContent = err.message;
     status.classList.add('err');
   } finally {
     button.disabled = false;

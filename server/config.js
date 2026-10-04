@@ -27,8 +27,9 @@ module.exports = {
   publicDir: fromHere(settings.publicDir),
   appPattern: settings.appPattern,     // which top-level folders are apps, e.g. "*-app"
   repoRoot: fromHere(settings.repoRoot), // empty = the git repo this tool is inside
-  parentsFile: fromHere(settings.parentsFile),
   envFile: fromHere(settings.envFile),
+  bash: settings.bash,                 // the bash that runs the script, e.g. Git Bash's bash.exe on Windows
+  releaseScript: fromHere(settings.releaseScript), // run as: <script> <from> <to> <app> <version> <date>
   confluenceBaseUrl: settings.confluenceBaseUrl.replace(/\/+$/, ''),
   confluenceEmail: settings.confluenceEmail, // empty for Data Center; your Atlassian email for Cloud
 };

@@ -1,4 +1,4 @@
-// Talks to Confluence's REST API, and builds the release page.
+// Checks a Confluence token. The release page itself is created by the release script.
 const config = require('./config');
 const { HttpError } = require('./web');
 
@@ -17,20 +17,15 @@ const MESSAGES = {
   404: 'Not found on Confluence',
 };
 
-// GETs a Confluence REST path, or POSTs `body` to it. Returns the JSON answer,
-// or throws an HttpError with a readable message (e.g. "A page with this title already exists").
-async function request(path, token, body) {
+// GETs a Confluence REST path. Returns the JSON answer, or throws an HttpError with a readable message.
+async function request(path, token) {
   let res;
   try {
     res = await fetch(BASE_URL + path, {
-      method: body ? 'POST' : 'GET',
       headers: {
         Authorization: authHeader(token),
         Accept: 'application/json',
-        'Content-Type': 'application/json',
-        'X-Atlassian-Token': 'no-check', // lets REST writes past Confluence's XSRF check
       },
-      body: body && JSON.stringify(body),
       redirect: 'manual',
       signal: AbortSignal.timeout(10_000),
     });
@@ -50,62 +45,4 @@ async function currentUser(token) {
   return user.displayName || user.username || 'user';
 }
 
-function getPage(pageId, token) {
-  return request(`/rest/api/content/${pageId}?expand=space`, token);
-}
-
-// Creates "Release <version> <date>" under `parent`, in the parent's space.
-async function createReleasePage({ token, parent, version, date, ...release }) {
-  const title = `Release ${version} ${date}`;
-  const page = await request('/rest/api/content', token, {
-    type: 'page',
-    title,
-    space: { key: parent.space.key },
-    ancestors: [{ id: parent.id }],
-    body: { storage: { representation: 'storage', value: releaseBody({ date, ...release }) } },
-  });
-  const url = (page._links?.base || BASE_URL) + (page._links?.webui || `/pages/viewpage.action?pageId=${page.id}`);
-  return { title, url, id: page.id };
-}
-
-// ── Page content (Confluence storage format, a kind of XHTML) ───────────────
-
-const TITLE_MAX = 80;
-
-function escapeXml(text) {
-  return String(text)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-function shorten(text) {
-  return text.length > TITLE_MAX ? text.slice(0, TITLE_MAX - 1).trimEnd() + '…' : text;
-}
-
-// An unticked Confluence checkbox. Task IDs must be unique within the page.
-function checkbox(taskId) {
-  return `<ac:task-list><ac:task><ac:task-id>${taskId}</ac:task-id>`
-    + '<ac:task-status>incomplete</ac:task-status><ac:task-body></ac:task-body>'
-    + '</ac:task></ac:task-list>';
-}
-
-function releaseBody({ app, from, to, date, changes }) {
-  const intro = `<p><strong>App:</strong> ${escapeXml(app)}`
-    + ` · <strong>Tags:</strong> <code>${escapeXml(from)}</code> → <code>${escapeXml(to)}</code>`
-    + ` · <strong>Date:</strong> ${escapeXml(date)}</p>`;
-  if (!changes.length) return intro + '<p>No changes in this release.</p>';
-
-  const rows = changes.map((change, i) => {
-    const title = escapeXml(shorten(change.title)) + (change.pr ? ` (#${change.pr})` : '');
-    return `<tr><td>${escapeXml(change.author)}</td><td>${title}</td>`
-      + `<td>${checkbox(2 * i + 1)}</td><td>${checkbox(2 * i + 2)}</td></tr>`;
-  });
-
-  return intro
-    + '<table><tbody>'
-    + '<tr><th>Author</th><th>PR</th><th>Affects a11y</th><th>No a11y impact</th></tr>'
-    + rows.join('')
-    + '</tbody></table>';
-}
-
-module.exports = { currentUser, getPage, createReleasePage };
+module.exports = { currentUser };

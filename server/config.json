@@ -4,8 +4,9 @@
   "publicDir": "../public",
   "appPattern": "*-app",
   "repoRoot": "",
-  "parentsFile": "parents.json",
   "envFile": ".env",
+  "bash": "bash",
+  "releaseScript": "release.sh",
   "confluenceEmail": "",
   "environments": {
     "real": {
@@ -16,8 +17,8 @@
       "confluenceBaseUrl": "http://localhost:3999",
       "appPattern": "app-*",
       "repoRoot": ".fake/repo",
-      "parentsFile": ".fake/parents.json",
-      "envFile": ".fake/.env"
+      "envFile": ".fake/.env",
+      "releaseScript": "fake-release.sh"
     }
   }
 }

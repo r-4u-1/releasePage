@@ -1,14 +1,12 @@
 // The fake environment for `node server.js --fake`:
 //   • a fake monorepo with app-a and app-b, their commits and OLD/NEW tags
-//   • a fake Confluence that prints what it gets and writes created pages as HTML files
+//   • a fake Confluence that accepts any token (the token check is all the server asks it)
+//   • fake-release.sh stands in for the real release script
 // Paths come from the "fake" entry in config.json. Add --reset to rebuild the fake data.
 const fs = require('node:fs');
 const path = require('node:path');
 const { execFileSync } = require('node:child_process');
-const { createApp, sendFile } = require('./web');
-
-// Parent page IDs filled in for the fake apps. The fake Confluence accepts any ID.
-const SAVED_PARENTS = { 'app-a': '100001', 'app-b': '100002' };
+const { createApp } = require('./web');
 
 // ── Fake monorepo ──────────────────────────────────────────────────────────
 
@@ -59,63 +57,35 @@ function createRepo(repo) {
 }
 
 // ── Fake Confluence ────────────────────────────────────────────────────────
-// Accepts any token and any page ID and prints what it was given.
-// A created page is written as an HTML file to pagesDir and served at /pages/<id>.html.
+// Accepts any token and prints it.
 
-function fakeConfluence(baseUrl, pagesDir) {
-  const app = createApp({ bodyLimit: 5 * 1024 * 1024 });
-
+function fakeConfluence() {
+  const app = createApp();
   app.get('/rest/api/user/current', req => {
     console.log('[fake confluence] token:', req.headers.authorization);
     return {};
   });
-
-  app.get('/rest/api/content/:id', req => {
-    console.log('[fake confluence] page id:', req.params.id);
-    return { id: req.params.id, title: `Fake page ${req.params.id}`, space: { key: 'FAKE' } };
-  });
-
-  app.post('/rest/api/content', req => {
-    const { title, body } = req.body;
-    const id = String(Date.now());
-    const file = path.join(pagesDir, `${id}.html`);
-    fs.writeFileSync(file, `<!doctype html><meta charset="utf-8"><h1>${title}</h1>
-${body.storage.value}
-`);
-    console.log('[fake confluence] created page:', file);
-    return { id, _links: { base: baseUrl, webui: `/pages/${id}.html` } };
-  });
-
-  app.get('/pages/:file', (req, res) => sendFile(res, path.join(pagesDir, path.basename(req.params.file))));
-
   return app;
 }
 
 // ── Start ──────────────────────────────────────────────────────────────────
 
-async function start({ repoRoot, parentsFile, envFile, confluenceBaseUrl }) {
+async function start({ repoRoot, envFile, confluenceBaseUrl }) {
   if (process.argv.includes('--reset')) {
-    fs.rmSync(path.dirname(parentsFile), { recursive: true, force: true });
+    fs.rmSync(path.dirname(envFile), { recursive: true, force: true });
   }
   if (!fs.existsSync(repoRoot)) {
     console.log('[fake] creating fake monorepo with app-a and app-b…');
     createRepo(repoRoot);
-  }
-  fs.mkdirSync(path.dirname(parentsFile), { recursive: true });
-  if (!fs.existsSync(parentsFile)) {
-    fs.writeFileSync(parentsFile, JSON.stringify(SAVED_PARENTS, null, 2) + '\n');
   }
   // An empty .env, so saving the token can be tried out too.
   if (!fs.existsSync(envFile)) {
     fs.writeFileSync(envFile, '# Fake environment — the fake token gets saved here\n');
   }
 
-  const pagesDir = path.join(path.dirname(parentsFile), 'pages');
-  fs.mkdirSync(pagesDir, { recursive: true });
-
   const port = Number(new URL(confluenceBaseUrl).port);
   await new Promise((resolve, reject) => {
-    fakeConfluence(confluenceBaseUrl, pagesDir).listen(port, resolve).on('error', reject);
+    fakeConfluence().listen(port, resolve).on('error', reject);
   });
   console.log(`[fake] fake Confluence on ${confluenceBaseUrl} — any token works`);
 }

@@ -161,16 +161,6 @@
             <span class="err-msg" id="e-app"></span>
           </div>
 
-          <!-- PARENT PAGE ID — filled from the app's saved parent, verify field (needs a verified token) -->
-          <div class="field full-width verify-field no-badge" id="f-pageid">
-            <label for="pageid">Parent page ID</label>
-            <input type="text" id="pageid" name="pageid" inputmode="numeric" autocomplete="off" spellcheck="false"/>
-            <span class="err-msg" id="e-pageid"></span>
-            <span class="field-hint" id="h-pageid"></span>
-            <span class="vf-badge" id="badge-pageid"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" fill="currentColor"/><path class="vf-check" d="M3.5 7l2.3 2.3 4.7-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-            <span class="vf-spinner" id="spinner-pageid"></span>
-          </div>
-
           <!-- VERSION -->
           <div class="field" id="f-version">
             <label for="version">Version</label>
@@ -199,7 +189,7 @@
             <span class="err-msg" id="e-eventdate"></span>
           </div>
 
-          <!-- TAGS — the release is the app folder's git log between the two tags -->
+          <!-- TAGS — the release script reads the git log between them -->
           <div class="field" id="f-tagfrom">
             <label for="tagfrom">From tag (OLD)</label>
             <select id="tagfrom" name="tagfrom" disabled><option value="">Select an app first</option></select>
@@ -209,15 +199,6 @@
             <label for="tagto">To tag (NEW)</label>
             <select id="tagto" name="tagto" disabled><option value="">Select an app first</option></select>
             <span class="err-msg" id="e-tagto"></span>
-          </div>
-          <div class="changes" id="changes" hidden>
-            <p class="changes-sum" id="changes-sum" role="status" aria-live="polite"></p>
-            <div class="changes-scroll">
-              <table class="changes-table">
-                <thead><tr><th scope="col">Author</th><th scope="col">PR</th></tr></thead>
-                <tbody id="changes-body"></tbody>
-              </table>
-            </div>
           </div>
 
         </div><!-- /form-grid -->
