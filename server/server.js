@@ -3,9 +3,11 @@
 // It does three things:
 //   1. Serves the form page (the files in public/).
 //   2. Answers the form's questions: which apps exist, which tags they have, does the token work.
-//   3. Runs the release script:
-//        bash <releaseScript> <from-tag> <to-tag> <app> <version> <date>
-//      The Confluence token is given to the script as the CONFLUENCE_TOKEN environment variable.
+//   3. Creates the release page in Confluence:
+//        - reads the "Merged PR" commits of the app between the two tags,
+//        - builds a table of them (author + PR title, plus isVerified and Note for some apps),
+//        - creates the page under the app's parent page,
+//        - opens the new page in the browser.
 //
 // Every answer to the form is JSON: { ok: true, ... } or { ok: false, message: "what went wrong" }.
 
@@ -29,14 +31,12 @@ const PUBLIC_FILES = fs.readdirSync(PUBLIC_DIR);
 // Where the token is saved. Only used if you created this file yourself.
 const ENV_FILE = path.join(__dirname, '.env');
 
-// The release script. Git Bash on Windows understands C:/x/y.sh, but not always C:\x\y.sh.
-const RELEASE_SCRIPT = path.resolve(__dirname, config.releaseScript).replace(/\\/g, '/');
-
 // Confluence's address, without a trailing slash.
 const CONFLUENCE_URL = config.confluenceBaseUrl.replace(/\/+$/, '');
 
-// The release script may run for at most 5 minutes.
-const RELEASE_TIMEOUT_MS = 5 * 60 * 1000;
+// The token that last passed the check with Confluence (or was loaded from .env at start).
+// It's only kept in memory, and never sent back to the browser.
+let activeToken = '';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Small helpers
@@ -59,13 +59,17 @@ function escapeForRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-// The last non-empty line of some output, e.g. the error message at the end of a script's stderr.
-function lastLine(output) {
-  return String(output).trim().split('\n').pop();
+// Makes text safe to put inside the page's HTML, e.g. a PR title "Fix <input> & more".
+function escapeHtml(text) {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Git: apps and tags
+// Git: apps, tags and merged PRs
 // ═══════════════════════════════════════════════════════════════════════════
 
 // Runs a git command in the given folder and returns what it printed.
@@ -98,7 +102,7 @@ const APP_NAME_PATTERN = new RegExp(
 );
 
 // The app names: top-level folders of the monorepo that match appPattern.
-// Hidden folders, node_modules and this tool's own folder are always left out.
+// Only matters for broad patterns like "*": hidden folders, node_modules and this tool's own folder are left out.
 function listApps() {
   const folders = fs.readdirSync(REPO_ROOT, { withFileTypes: true })
     .filter(entry => entry.isDirectory())
@@ -131,8 +135,62 @@ function listTags(app) {
     .sort((a, b) => tagNumber(b) - tagNumber(a) || a.localeCompare(b)); // a, b: two tags being compared
 }
 
+// git prints one line per commit. Between the fields of a line it puts this invisible
+// "unit separator" character, which never appears in names or commit messages.
+const FIELD_SEPARATOR = '\x1f';
+
+// The PRs merged into the app between the two tags, newest first:
+//   [{ title: 'Add keyboard navigation', author: 'Alice' }, ...]
+// A merged PR is a commit whose message contains "Merged PR", e.g. "Merged PR 1234: Add keyboard navigation".
+function listMergedPullRequests(app, fromTag, toTag) {
+  const output = runGit([
+    'log',
+    '--first-parent',                  // only the commits made on the main line, not the commits inside each PR
+    '--grep=Merged PR',                // only commits whose message contains "Merged PR"
+    '--format=%H%x1f%P%x1f%an%x1f%s',  // hash, parent hashes, author, subject — separated by FIELD_SEPARATOR
+    `${fromTag}..${toTag}`,            // everything after fromTag, up to and including toTag
+    '--',
+    '.',                               // only commits that changed this app's folder (git runs inside it)
+  ], path.join(REPO_ROOT, app));
+
+  const commits = output.split('\n').filter(Boolean).map(line => {
+    const [hash, parents, mergedBy, subject] = line.split(FIELD_SEPARATOR);
+    return {
+      hash,
+      // A merge commit has two parents: [main line, last commit of the PR's branch].
+      // A squashed PR is a single commit with one parent.
+      prBranchTip: parents.split(' ')[1],
+      mergedBy,
+      // "Merged PR 1234: Add keyboard navigation" → "Add keyboard navigation"
+      title: subject.replace(/^Merged PR \d+:\s*/, ''),
+    };
+  });
+
+  const authors = authorsOfCommits(commits.map(commit => commit.prBranchTip).filter(Boolean));
+
+  // The person who opened the PR: the author of the PR branch's last commit.
+  // For a squashed PR there's no branch left, so it's the author of the squashed commit.
+  return commits.map(commit => ({
+    title: commit.title,
+    author: authors[commit.prBranchTip] || commit.mergedBy,
+  }));
+}
+
+// The author of each commit, in one git call: { '<hash>': 'Alice', ... }
+function authorsOfCommits(hashes) {
+  if (hashes.length === 0) return {};
+
+  const output = runGit(['show', '--no-patch', '--format=%H%x1f%an', ...hashes], REPO_ROOT);
+  const authors = {};
+  for (const line of output.split('\n').filter(Boolean)) {
+    const [hash, author] = line.split(FIELD_SEPARATOR);
+    authors[hash] = author;
+  }
+  return authors;
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
-// Token: saved in .env, checked with Confluence
+// Token: saved in .env
 // ═══════════════════════════════════════════════════════════════════════════
 
 // The token line in .env, e.g.  CONFLUENCE_TOKEN=abc123  or  CONFLUENCE_TOKEN="abc123"
@@ -171,6 +229,17 @@ function saveToken(token) {
   return true;
 }
 
+// The token typed in the form, or else the one that's already verified or saved.
+function tokenFromForm(body) {
+  const token = textValue(body.token) || activeToken;
+  if (!token) fail(400, 'Token is required');
+  return token;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Confluence
+// ═══════════════════════════════════════════════════════════════════════════
+
 // The Authorization header for Confluence.
 //   Data Center: the personal access token, sent as "Bearer <token>".
 //   Cloud:       your account email and the API token, sent as "Basic <base64 of email:token>".
@@ -182,84 +251,149 @@ function authorizationHeader(token) {
   return 'Basic ' + Buffer.from(emailAndToken).toString('base64');
 }
 
-// Asks Confluence who the token belongs to. Returns that person's name, or fails.
-async function checkTokenWithConfluence(token) {
+// Calls Confluence's REST API and returns its JSON answer, or fails with a readable message.
+//   method:  'GET' or 'POST'
+//   apiPath: e.g. '/rest/api/user/current'
+//   body:    sent as JSON (POST only)
+async function callConfluence(token, method, apiPath, body) {
   let response;
   try {
-    response = await fetch(CONFLUENCE_URL + '/rest/api/user/current', {
-      headers: { Authorization: authorizationHeader(token), Accept: 'application/json' },
-      redirect: 'manual',                 // a redirect means a login page, not an answer
-      signal: AbortSignal.timeout(10_000), // give up after 10 seconds
+    response = await fetch(CONFLUENCE_URL + apiPath, {
+      method,
+      headers: {
+        Authorization: authorizationHeader(token),
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      redirect: 'manual',                  // a redirect means a login page, not an answer
+      signal: AbortSignal.timeout(30_000), // give up after 30 seconds
     });
   } catch {
     fail(502, 'Could not reach Confluence');
   }
 
-  const user = await response.json().catch(() => ({}));
+  const answer = await response.json().catch(() => ({}));
+  if (response.ok) return answer;
 
+  if (response.status === 401) fail(401, 'Token rejected by Confluence');
+  if (response.status === 403) fail(403, 'Token has no access to this on Confluence');
+  // Confluence explains most other problems itself, e.g. "A page with this title already exists".
+  const status = response.status >= 400 && response.status < 500 ? response.status : 502;
+  fail(status, answer.message || `Confluence responded with HTTP ${response.status}`);
+}
+
+// Asks Confluence who the token belongs to. Returns that person's name, or fails.
+async function checkTokenWithConfluence(token) {
+  const user = await callConfluence(token, 'GET', '/rest/api/user/current');
   // Cloud answers a bad token with an "anonymous" user instead of 401.
-  if (response.status === 401 || user.type === 'anonymous') fail(401, 'Token rejected by Confluence');
-  if (response.status === 403) fail(403, 'Token has no access to Confluence');
-  if (!response.ok) fail(502, `Confluence responded with HTTP ${response.status}`);
-
+  if (user.type === 'anonymous') fail(401, 'Token rejected by Confluence');
   return user.displayName || user.username || 'user';
 }
 
-// The token typed in the form, or else the one that's already verified or saved.
-function tokenFromForm(body) {
-  const token = textValue(body.token) || process.env.CONFLUENCE_TOKEN;
-  if (!token) fail(400, 'Token is required');
-  return token;
+// Creates a page under the parent page, in the parent's space. Returns the new page's address.
+async function createConfluencePage(token, { title, parentPageId, content }) {
+  let parent;
+  try {
+    parent = await callConfluence(token, 'GET', `/rest/api/content/${encodeURIComponent(parentPageId)}?expand=space`);
+  } catch (error) {
+    if (error.status === 404) fail(400, `Parent page ${parentPageId} not found on Confluence`);
+    throw error;
+  }
+
+  const page = await callConfluence(token, 'POST', '/rest/api/content', {
+    type: 'page',
+    title,
+    space: { key: parent.space.key },
+    ancestors: [{ id: parentPageId }],                          // the new page goes under this page
+    body: { storage: { value: content, representation: 'storage' } }, // "storage" = Confluence's page HTML
+  });
+
+  // _links.base is Confluence's address, _links.webui the page's path, e.g. "/pages/viewpage.action?pageId=123".
+  return (page._links.base || CONFLUENCE_URL) + page._links.webui;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Release script
+// The release page's content
 // ═══════════════════════════════════════════════════════════════════════════
+// Confluence pages are written in its "storage format": HTML plus Confluence's own <ac:...> tags
+// for things like checkboxes (task lists), info boxes (macros) and column layouts.
 
-// Runs the release script from the monorepo root. Returns what it printed.
-// Fails with its last error line if it exits with anything other than 0.
-function runReleaseScript({ from, to, app, version, date }) {
-  const args = [RELEASE_SCRIPT, from, to, app, version, date];
+// A checkbox people can tick on the page. Confluence numbers each one on the page with a task id.
+function checkbox(taskId) {
+  return '<ac:task-list><ac:task>'
+    + `<ac:task-id>${taskId}</ac:task-id>`
+    + '<ac:task-status>incomplete</ac:task-status>'
+    + '<ac:task-body>&nbsp;</ac:task-body>'
+    + '</ac:task></ac:task-list>';
+}
 
-  const environment = {
-    ...process.env, // includes CONFLUENCE_TOKEN once a token is verified
-    CONFLUENCE_BASE_URL: CONFLUENCE_URL,
-    CONFLUENCE_EMAIL: config.confluenceEmail,
-  };
+// The table of PRs. Apps that need verification get two extra columns: isVerified (a checkbox) and Note (empty).
+function pullRequestTable(pullRequests, withVerification) {
+  const headers = ['Author', 'Pull request'];
+  if (withVerification) headers.push('isVerified', 'Note');
 
-  console.log(`[release] ${config.bash} ${args.join(' ')}`);
+  const headerRow = '<tr>' + headers.map(header => `<th>${header}</th>`).join('') + '</tr>';
 
-  return new Promise((resolve, reject) => {
-    const options = {
-      cwd: REPO_ROOT,
-      env: environment,
-      timeout: RELEASE_TIMEOUT_MS,
-      maxBuffer: 8 * 1024 * 1024,
-    };
+  const rows = pullRequests.map((pullRequest, index) => {
+    let cells = `<td>${escapeHtml(pullRequest.author)}</td><td>${escapeHtml(pullRequest.title)}</td>`;
+    if (withVerification) {
+      cells += `<td>${checkbox(index + 1)}</td><td></td>`;
+    }
+    return `<tr>${cells}</tr>`;
+  });
 
-    // stdout: what the script printed. stderr: what it printed as errors.
-    execFile(config.bash, args, options, (error, stdout, stderr) => {
-      process.stdout.write(stdout); // show the script's output in this terminal too
-      process.stderr.write(stderr);
+  return `<table><tbody>${headerRow}${rows.join('')}</tbody></table>`;
+}
 
-      if (!error) {
-        resolve(stdout.trim());
-        return;
-      }
+// The rounded info box shown beside the table, for apps that need verification.
+// "info" is Confluence's built-in info panel macro.
+function verificationInfoBox() {
+  return '<ac:structured-macro ac:name="info">'
+    + '<ac:parameter ac:name="title">Verification</ac:parameter>'
+    + `<ac:rich-text-body><p>${escapeHtml(config.verificationInfo)}</p></ac:rich-text-body>`
+    + '</ac:structured-macro>';
+}
 
-      let reason;
-      if (error.code === 'ENOENT') {
-        reason = `"${config.bash}" not found — set "bash" in config.json`;
-      } else if (error.killed) {
-        reason = 'timed out after 5 minutes';
-      } else {
-        reason = lastLine(stderr || stdout) || `exit code ${error.code}`;
-      }
+// The whole page: a summary line and the PR table.
+// Apps that need verification get a two-column layout: the table on the left, the info box on the right.
+function releasePageContent({ app, version, date, from, to, pullRequests }) {
+  const withVerification = config.appsWithVerification.includes(app);
 
-      const failure = new Error(`Release script failed: ${reason}`);
-      failure.status = 500;
-      reject(failure);
-    });
+  const summary = `<p><strong>Version:</strong> ${escapeHtml(version)}`
+    + ` · <strong>Release date:</strong> ${escapeHtml(date)}`
+    + ` · <strong>Tags:</strong> ${escapeHtml(from)} → ${escapeHtml(to)}`
+    + ` · <strong>Pull requests:</strong> ${pullRequests.length}</p>`;
+  const table = pullRequestTable(pullRequests, withVerification);
+
+  if (!withVerification) {
+    return summary + table;
+  }
+
+  // "two_right_sidebar": a wide column on the left and a narrow one on the right.
+  return '<ac:layout><ac:layout-section ac:type="two_right_sidebar">'
+    + `<ac:layout-cell>${summary}${table}</ac:layout-cell>`
+    + `<ac:layout-cell>${verificationInfoBox()}</ac:layout-cell>`
+    + '</ac:layout-section></ac:layout>';
+}
+
+// Opens the address in this computer's default browser.
+function openInBrowser(url) {
+  let command;
+  let args;
+  if (process.platform === 'win32') {
+    command = 'rundll32';                          // Windows' own "open this address" helper
+    args = ['url.dll,FileProtocolHandler', url];
+  } else if (process.platform === 'darwin') {
+    command = 'open';                              // macOS
+    args = [url];
+  } else {
+    command = 'xdg-open';                          // Linux
+    args = [url];
+  }
+
+  execFile(command, args, error => {
+    if (error) console.warn(`[browser] could not open ${url}: ${error.message}`);
   });
 }
 
@@ -276,11 +410,11 @@ function getTokenStatus() {
 }
 
 // Checks the typed token, or the saved one when none is typed.
-// A working token becomes CONFLUENCE_TOKEN for the release script. A typed one is also saved to .env.
+// A working token is kept for creating the page. A typed one is also saved to .env.
 async function verifyToken(body) {
   const token = tokenFromForm(body);
   const userName = await checkTokenWithConfluence(token);
-  process.env.CONFLUENCE_TOKEN = token;
+  activeToken = token;
 
   const typedToken = textValue(body.token);
   const saved = typedToken ? saveToken(typedToken) : true;
@@ -288,9 +422,9 @@ async function verifyToken(body) {
   return { message: `Authenticated as ${userName}`, saved };
 }
 
-// Checks the form and runs the release script.
-async function startRelease(body) {
-  process.env.CONFLUENCE_TOKEN = tokenFromForm(body);
+// Checks the form, reads the merged PRs, creates the release page and opens it.
+async function createReleasePage(body) {
+  const token = tokenFromForm(body);
 
   const { app, from, to } = body;
   const version = textValue(body.version);
@@ -308,8 +442,25 @@ async function startRelease(body) {
     fail(400, `Pick two tags that belong to ${app}`);
   }
 
-  const output = await runReleaseScript({ from, to, app, version, date });
-  return { output };
+  const parentPageId = config.parentPageIds[app];
+  if (!parentPageId) {
+    fail(400, `No parent page for ${app} — add it to "parentPageIds" in config.json`);
+  }
+
+  const pullRequests = listMergedPullRequests(app, from, to);
+  if (pullRequests.length === 0) {
+    fail(400, `No merged PRs in ${app} between ${from} and ${to}`);
+  }
+
+  const pageUrl = await createConfluencePage(token, {
+    title: `Rel of ${app} - ${date}`,
+    parentPageId,
+    content: releasePageContent({ app, version, date, from, to, pullRequests }),
+  });
+
+  console.log(`[release] created ${pageUrl} with ${pullRequests.length} PRs`);
+  openInBrowser(pageUrl);
+  return { pageUrl, pullRequestCount: pullRequests.length };
 }
 
 // Finds what to do for a request, e.g. "GET /api/apps".
@@ -317,7 +468,7 @@ async function answerApiRequest(method, pathname, body) {
   if (method === 'GET' && pathname === '/api/token') return getTokenStatus();
   if (method === 'POST' && pathname === '/api/verify/token') return verifyToken(body);
   if (method === 'GET' && pathname === '/api/apps') return { apps: listApps() };
-  if (method === 'POST' && pathname === '/api/release') return startRelease(body);
+  if (method === 'POST' && pathname === '/api/release') return createReleasePage(body);
 
   // GET /api/apps/<app>/tags  — the app name is captured as group 1.
   const tagsRequest = /^\/api\/apps\/([^/]+)\/tags$/.exec(pathname);
@@ -414,11 +565,8 @@ async function handleRequest(request, response) {
 // Start
 // ═══════════════════════════════════════════════════════════════════════════
 
-// A token saved in .env is ready for the release script from the start.
-const savedToken = readSavedToken();
-if (savedToken) {
-  process.env.CONFLUENCE_TOKEN = savedToken;
-}
+// A token saved in .env is ready from the start.
+activeToken = readSavedToken();
 
 // 127.0.0.1: only this computer can reach the server.
 http.createServer(handleRequest).listen(PORT, '127.0.0.1', () => {

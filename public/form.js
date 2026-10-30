@@ -1,5 +1,5 @@
 'use strict';
-// The release form: checks each field, loads apps and tags, and starts the release script.
+// The release form: checks each field, loads apps and tags, and creates the release page.
 
 const $ = id => document.getElementById(id);
 
@@ -361,7 +361,7 @@ appSelect.addEventListener('change', () => loadTags(appSelect.value));
 loadApps();
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   CREATE PAGE — the server runs the release script with these values
+   CREATE PAGE — the server creates the Confluence page from these values
 ═══════════════════════════════════════════════════════════════════════════ */
 
 // Marks every missing or unchecked field. True when everything is ready.
@@ -398,21 +398,16 @@ $('mainForm').addEventListener('submit', async event => {
   const button = $('submitBtn'), status = $('statusMsg');
   button.disabled = true;
   button.classList.add('loading');
-  status.textContent = 'Running the release script…';
+  status.textContent = 'Creating the release page…';
   status.className = 'status-msg';
 
   try {
-    const { output } = await api('/api/release', release);
-    // The script's last line, as a link when it is the page's address.
-    const last = output.split('\n').pop().trim();
-    if (/^https?:\/\/\S+$/.test(last)) {
-      const link = Object.assign(document.createElement('a'), {
-        href: last, target: '_blank', rel: 'noopener', textContent: 'open in Confluence',
-      });
-      status.replaceChildren('Release page created — ', link);
-    } else {
-      status.textContent = last || 'Release script finished';
-    }
+    // The server also opens the new page in the browser; this link is in case that didn't work.
+    const { pageUrl, pullRequestCount } = await api('/api/release', release);
+    const link = Object.assign(document.createElement('a'), {
+      href: pageUrl, target: '_blank', rel: 'noopener', textContent: 'open in Confluence',
+    });
+    status.replaceChildren(`Release page created with ${pullRequestCount} PRs — `, link);
     status.classList.add('ok');
   } catch (err) {
     status.textContent = err.message;

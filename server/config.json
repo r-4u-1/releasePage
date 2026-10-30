@@ -2,8 +2,12 @@
   "port": 3000,
   "appPattern": "*-app",
   "repoRoot": "",
-  "bash": "bash",
-  "releaseScript": "release.sh",
   "confluenceBaseUrl": "https://confluence.example.com",
-  "confluenceEmail": ""
+  "confluenceEmail": "",
+  "parentPageIds": {
+    "a-app": "100001",
+    "b-app": "100002"
+  },
+  "appsWithVerification": ["a-app", "b-app"],
+  "verificationInfo": "This app needs every PR verified before the release. Tick isVerified once a PR is tested, and add a Note if something needs attention."
 }
