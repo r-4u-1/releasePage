@@ -26,54 +26,22 @@ The script reads the merged PRs between the two tags from git and creates the re
 
 ## Contents
 
-- [Quick start (fake mode)](#quick-start-fake-mode)
-- [Using it for real](#using-it-for-real)
+- [Setup](#setup)
 - [Walking through the form](#walking-through-the-form)
 - [The release script](#the-release-script)
 - [How apps and tags are found](#how-apps-and-tags-are-found)
 - [The token](#the-token)
 - [Configuration](#configuration)
-- [Real and fake mode](#real-and-fake-mode)
 - [Files](#files)
 - [API](#api)
 - [Troubleshooting](#troubleshooting)
 
 ---
 
-## Quick start (fake mode)
+## Setup
 
-Fake mode needs no Confluence, no real repo and no real release script. It creates a fake monorepo, runs a fake Confluence that accepts any token, and uses [`server/fake-release.sh`](server/fake-release.sh) instead of the real script.
+Requirements: **Node.js 18.11 or newer**, **git** and **bash** (Git Bash on Windows). Nothing to install: the server only uses Node's built-in modules.
 
-Requirements: **Node.js 18.11 or newer** (tested on 22), **git** and **bash** (Git Bash on Windows). Nothing to install: the tool only uses Node's built-in modules.
-
-```bash
-cd server
-npm run fake
-```
-
-Open **http://localhost:3000/** and:
-
-1. Paste any token, e.g. `test`. The fake Confluence accepts every token.
-2. Pick **app-a** or **app-b**. The newest tag pair is picked for you.
-3. Enter a **Version** (e.g. `1.0.0`) and a **Date**.
-4. Click **Create page**.
-
-The fake script prints what it was given (arguments, whether the token is set) and the merged PRs between the tags. Its output shows in the terminal, and its last line under the button.
-
-| Fake app | Tags |
-|---|---|
-| `app-a` | `app-a-1-OLD` / `app-a-1-NEW`, `app-a-2-OLD` / `app-a-2-NEW` |
-| `app-b` | `app-b-1-OLD` / `app-b-1-NEW` |
-
-All fake data lives in `server/.fake/`, which git ignores. To start again from fresh fake data:
-
-```bash
-npm run fake -- --reset
-```
-
----
-
-## Using it for real
 
 **1. Put the tool in the monorepo.** The server lists the monorepo's top-level folders as apps, and runs the script from the monorepo root:
 
@@ -90,7 +58,7 @@ monorepo/
 
 **2. Add the release script** as `server/release.sh`, or point `releaseScript` in [`server/config.json`](server/config.json) at it. See [The release script](#the-release-script).
 
-**3. Set the Confluence address.** In `server/config.json`, under `environments.real`, replace the example URL with yours. It's used to check the token, and passed to the script as `CONFLUENCE_BASE_URL`.
+**3. Set the Confluence address.** In `server/config.json`, replace the example `confluenceBaseUrl` with yours. It's used to check the token, and passed to the script as `CONFLUENCE_BASE_URL`.
 
 **4. On Windows, check `bash`.** From PowerShell, `bash` may be WSL's `bash.exe`, which can't run a script under `C:\`. Set `"bash"` in `config.json` to Git Bash, e.g. `"C:/Program Files/Git/bin/bash.exe"`.
 
@@ -154,8 +122,6 @@ The server only starts the script for an app folder that exists and two tags tha
 
 **Apps** are the top-level folders of the monorepo whose name matches `appPattern` in `config.json`. The default is `*-app`, so `web-app` and `admin-app` are apps, but `docs`, `shared-lib` or `app-web` are not. `*` matches anything. Folders starting with `.`, `node_modules`, and the folder this tool lives in are always left out.
 
-The fake environment uses `app-*` instead, to match its fake apps `app-a` and `app-b`.
-
 **Tags** must be named after the app folder:
 
 ```
@@ -180,39 +146,26 @@ Creating `.env` is how you opt in. The tool never creates the real one. `.env` i
 
 ### Keeping the saved token safe
 Since the server can run the script with your token, it only accepts requests that are:
-- **from this computer:** it listens on `127.0.0.1` only (`host` in `config.json`)
+- **from this computer:** it listens on `127.0.0.1` only
 - **from its own page:** requests from other websites, or addressed to it under any other name than `localhost` or `127.0.0.1`, are refused
 
 ---
 
 ## Configuration
 
-Everything is in [`server/config.json`](server/config.json). The top-level values apply to every environment; an environment only lists what it changes. Paths are relative to the `server` folder.
+Everything is in [`server/config.json`](server/config.json). Paths are relative to the `server` folder.
 
 | Setting | Meaning |
 |---|---|
 | `port` | Port the server listens on. The `PORT` environment variable overrides it. |
-| `host` | Address the server listens on. Keep `127.0.0.1`. |
-| `publicDir` | The folder with the form page. Only the files in it can be fetched. |
 | `appPattern` | Which top-level folders are apps, e.g. `*-app`. `*` matches anything. |
 | `repoRoot` | Monorepo root, and where the script runs. Empty means "the git repo this tool is inside". |
-| `envFile` | The file the token is read from and saved to. |
 | `bash` | The bash that runs the script. On Windows, use Git Bash's `bash.exe`. |
-| `releaseScript` | The release script. Real: `release.sh`. Fake: `fake-release.sh`. |
+| `releaseScript` | The release script, `release.sh` by default. |
 | `confluenceBaseUrl` | Confluence address, for the token check and the script. Cloud: `https://<site>.atlassian.net/wiki`. |
 | `confluenceEmail` | Empty for Data Center (the token is sent as `Bearer`). For Cloud, the Atlassian account email that owns the API token. |
-| `fake` | `true` creates the fake repo and starts the fake Confluence first. |
 
----
-
-## Real and fake mode
-
-| Command (from `server/`) | Environment | Git repo | Confluence | Script |
-|---|---|---|---|---|
-| `npm run dev` | real | your monorepo | yours | `release.sh` |
-| `npm start` | real (no auto-restart) | your monorepo | yours | `release.sh` |
-| `npm run fake` | fake | `.fake/repo` | fake, on `localhost:3999` | `fake-release.sh` |
-| `node server.js --env=<name>` | any environment in `config.json` | from config | from config | from config |
+`npm run dev` restarts the server when its files change; `npm start` doesn't.
 
 ---
 
@@ -226,19 +179,10 @@ public/                 The form, served at http://localhost:3000/
 ├── form.js             The form: field checks, apps → tags, starting the release
 └── effects.js          The hyperspeed intro, the heading letters and the Sith figure
 server/
-├── config.json         Settings, plus what each environment changes
-├── config.js           Reads config.json and the --fake / --env= flag
-├── server.js           All routes: the page and the API
-├── web.js              Tiny web framework on Node's built-in http module
-├── git.js              Lists apps and tags
-├── confluence.js       Checks the token with Confluence
-├── release.js          Runs the release script with CONFLUENCE_TOKEN set
-├── storage.js          Reads and saves the token in .env
-├── fake.js             Fake monorepo + a fake Confluence, for --fake
-├── fake-release.sh     Stand-in release script, for --fake
+├── server.js           The whole server: the page, the API, git, the token and the release script
+├── config.json         Settings
 ├── release.sh          The real release script (you add it)
-├── .env                Your saved token (you create it; gitignored)
-└── .fake/              Generated fake data (gitignored)
+└── .env                Your saved token (you create it; gitignored)
 ```
 
 ---
@@ -269,4 +213,4 @@ All answers are JSON with `ok: true/false`. Errors come with a `message` and a m
 | App list says **No apps found** | No top-level folder matches `appPattern`. Check the folder names, or `repoRoot` in `config.json`. |
 | **No app-x-&lt;n&gt;-OLD / -NEW tags found** | The app has no tags named like `app-x-12-OLD`. Fetch them with `git fetch --tags`. |
 | Page shows **Forbidden** | Open the page as `http://localhost:3000/` or `http://127.0.0.1:3000/`. |
-| `EADDRINUSE` when starting | Port 3000 (or 3999 in fake mode) is in use. Stop the other program, or start with a different `PORT`. |
+| `EADDRINUSE` when starting | Port 3000 is in use. Stop the other program, or start with a different `PORT`. |
