@@ -1,9 +1,9 @@
 // Opens an address in this computer's default browser.
-const { execFile } = require('node:child_process');
+import { execFile } from 'node:child_process';
 
-function openInBrowser(url) {
-  let command;
-  let args;
+export function openInBrowser(url: string): void {
+  let command: string;
+  let args: string[];
   if (process.platform === 'win32') {
     command = 'rundll32';                          // Windows' own "open this address" helper
     args = ['url.dll,FileProtocolHandler', url];
@@ -19,5 +19,3 @@ function openInBrowser(url) {
     if (error) console.warn(`[browser] could not open ${url}: ${error.message}`);
   });
 }
-
-module.exports = { openInBrowser };

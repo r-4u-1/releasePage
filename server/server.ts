@@ -16,33 +16,33 @@
 //   POST /api/release          create the release page
 //
 // This file shows what each of those does, and handleRequest() at the bottom picks one by its path. The details live in lib/:
-//   settings.js              config.json, the port, the paths and Confluence's address
-//   helpers.js               fail() and other small helpers
-//   git.js                   apps, tags and merged PRs
-//   token.js                 the Confluence token from server/.env
-//   confluence.js            Confluence's REST API: checking the token, creating a page
-//   release-page-content.js  the page's table and info box
-//   browser.js               opening the new page in the browser
-//   web.js                   who may call the server, reading requests, sending answers
+//   settings.ts              config.json, the port, the paths and Confluence's address
+//   helpers.ts               fail() and other small helpers
+//   git.ts                   apps, tags and merged PRs
+//   token.ts                 the Confluence token from server/.env
+//   confluence.ts            Confluence's REST API: checking the token, creating a page
+//   release-page-content.ts  the page's table and info box
+//   browser.ts               opening the new page in the browser
+//   web.ts                   who may call the server, reading requests, sending answers
 //
 // Every answer to the form is JSON: { ok: true, ... } or { ok: false, message: "what went wrong" }.
 
-const http = require('node:http');
-const { config, PORT, CONFLUENCE_URL } = require('./lib/settings');
-const { fail, textValue } = require('./lib/helpers');
-const git = require('./lib/git');
-const { requireToken } = require('./lib/token');
-const confluence = require('./lib/confluence');
-const { releasePageContent } = require('./lib/release-page-content');
-const { openInBrowser } = require('./lib/browser');
-const web = require('./lib/web');
+import http from 'node:http';
+import { config, PORT, CONFLUENCE_URL } from './lib/settings';
+import { fail, textValue, HttpError } from './lib/helpers';
+import * as git from './lib/git';
+import { requireToken } from './lib/token';
+import * as confluence from './lib/confluence';
+import { releasePageContent } from './lib/release-page-content';
+import { openInBrowser } from './lib/browser';
+import * as web from './lib/web';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GET /api/token
 // Is there a working token in server/.env? Never sends the token itself.
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function checkToken() {
+async function checkToken(): Promise<{ message: string }> {
   const token = requireToken();
   const userName = await confluence.checkTokenWithConfluence(token);
   return { message: `Authenticated as ${userName}` };
@@ -53,7 +53,7 @@ async function checkToken() {
 // The app names, e.g. { apps: ['admin-app', 'web-app'] }
 // ═══════════════════════════════════════════════════════════════════════════
 
-function listApps() {
+function listApps(): { apps: string[] } {
   return { apps: git.listApps() };
 }
 
@@ -62,7 +62,7 @@ function listApps() {
 // The app's OLD / NEW tags, newest first, e.g. { tags: ['web-app-12-NEW', 'web-app-12-OLD', ...] }
 // ═══════════════════════════════════════════════════════════════════════════
 
-function listTags(app) {
+function listTags(app: string): { tags: string[] } {
   return { tags: git.listTags(app) };
 }
 
@@ -72,11 +72,13 @@ function listTags(app) {
 // Checks the form, reads the merged PRs, creates the release page and opens it.
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function createRelease(body) {
+async function createRelease(body: Record<string, unknown>): Promise<{ pageUrl: string; pullRequestCount: number }> {
   const token = requireToken();
 
   // 1. Check what the form sent.
-  const { app, from, to } = body;
+  const app = textValue(body.app);
+  const from = textValue(body.from);
+  const to = textValue(body.to);
   const version = textValue(body.version);
   const date = textValue(body.date);
 
@@ -121,15 +123,15 @@ async function createRelease(body) {
 // Every request goes through here
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function handleRequest(request, response) {
+async function handleRequest(request: http.IncomingMessage, response: http.ServerResponse): Promise<void> {
   try {
     // Only this computer's own page may use the server.
     if (!web.isFromOwnPage(request)) {
       fail(403, `This server only answers its own page. Open it as http://localhost:${PORT}/ or http://127.0.0.1:${PORT}/.`);
     }
 
-    const { method } = request;
-    const { pathname, searchParams } = new URL(request.url, 'http://localhost');
+    const method = request.method ?? 'GET';
+    const { pathname, searchParams } = new URL(request.url ?? '/', 'http://localhost');
 
     // The form page: "/" is index.html, "/style.css" is public/style.css, and so on.
     const fileName = web.publicFileFor(pathname);
@@ -139,13 +141,13 @@ async function handleRequest(request, response) {
     }
 
     // Everything else is the API.
-    let answer;
+    let answer: object;
     if (method === 'GET' && pathname === '/api/token') {
       answer = await checkToken();
     } else if (method === 'GET' && pathname === '/api/apps') {
       answer = listApps();
     } else if (method === 'GET' && pathname === '/api/tags') {
-      answer = listTags(searchParams.get('app'));
+      answer = listTags(searchParams.get('app') ?? '');
     } else if (method === 'POST' && pathname === '/api/release') {
       answer = await createRelease(await web.readJsonBody(request));
     } else {
@@ -154,12 +156,12 @@ async function handleRequest(request, response) {
 
     web.sendJson(response, 200, { ok: true, ...answer });
   } catch (error) {
-    // Our own errors (from fail) have a status. A URIError is a broken %-escape in the address.
-    const status = error.status || (error instanceof URIError ? 400 : 500);
-    if (status >= 500) console.error('[server]', error.message);
+    // Our own errors (from fail) have a status. Anything else is unexpected.
+    const status = error instanceof HttpError ? error.status : 500;
+    if (status >= 500) console.error('[server]', error instanceof Error ? error.message : error);
 
     // Unexpected errors may contain internals, so the form only gets a pointer to the terminal.
-    const message = error.status || status === 400
+    const message = error instanceof HttpError
       ? error.message
       : 'Something went wrong in the release server. The terminal it runs in shows the details.';
     web.sendJson(response, status, { ok: false, message });

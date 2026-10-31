@@ -1,0 +1,13 @@
+// The server: server.ts and lib/*.ts, compiled to dist/ for Node.
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "nodenext",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "strict": true,
+    "rootDir": ".",
+    "outDir": "dist"
+  },
+  "include": ["server.ts", "lib"]
+}

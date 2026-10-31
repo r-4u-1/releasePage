@@ -1,10 +1,20 @@
 // The release page's content, in Confluence's "storage format":
 // HTML plus Confluence's own <ac:...> tags for things like info boxes (macros) and column layouts.
-const { config } = require('./settings');
-const { escapeHtml } = require('./helpers');
+import { config } from './settings';
+import { escapeHtml } from './helpers';
+import type { PullRequest } from './git';
+
+export interface Release {
+  app: string;
+  version: string;
+  date: string;
+  from: string;
+  to: string;
+  pullRequests: PullRequest[];
+}
 
 // The table of PRs. Apps that need verification get two extra, empty columns for people to fill in: isVerified and Note.
-function pullRequestTable(pullRequests, withVerification) {
+function pullRequestTable(pullRequests: PullRequest[], withVerification: boolean): string {
   const headers = ['Author', 'Pull request'];
   if (withVerification) headers.push('isVerified', 'Note');
 
@@ -23,7 +33,7 @@ function pullRequestTable(pullRequests, withVerification) {
 
 // The rounded info box shown beside the table, for apps that need verification.
 // "info" is Confluence's built-in info panel macro.
-function verificationInfoBox() {
+function verificationInfoBox(): string {
   return '<ac:structured-macro ac:name="info">'
     + '<ac:parameter ac:name="title">Verification</ac:parameter>'
     + `<ac:rich-text-body><p>${escapeHtml(config.verificationInfo)}</p></ac:rich-text-body>`
@@ -32,7 +42,7 @@ function verificationInfoBox() {
 
 // The whole page: a summary line and the PR table.
 // Apps that need verification get a two-column layout: the table on the left, the info box on the right.
-function releasePageContent({ app, version, date, from, to, pullRequests }) {
+export function releasePageContent({ app, version, date, from, to, pullRequests }: Release): string {
   const withVerification = config.appsWithVerification.includes(app);
 
   const summary = `<p><strong>Version:</strong> ${escapeHtml(version)}`
@@ -51,5 +61,3 @@ function releasePageContent({ app, version, date, from, to, pullRequests }) {
     + `<ac:layout-cell>${verificationInfoBox()}</ac:layout-cell>`
     + '</ac:layout-section></ac:layout>';
 }
-
-module.exports = { releasePageContent };

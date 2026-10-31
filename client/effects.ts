@@ -10,9 +10,9 @@
    and fires the "intro-done" event.
 ═══════════════════════════════════════════════════════════════════════════ */
 (function hyperspeedIntro() {
-  const overlay = document.getElementById('intro');
-  const canvas = document.getElementById('introCanvas');
-  const ctx = canvas.getContext('2d');
+  const overlay = document.getElementById('intro') as HTMLElement;
+  const canvas = document.getElementById('introCanvas') as HTMLCanvasElement;
+  const ctx = canvas.getContext('2d') as CanvasRenderingContext2D;
 
   const STAR_COUNT = 380;
   const MAX_SPEED = 38;
@@ -20,12 +20,21 @@
   const ACCEL_MS = 1400, HOLD_MS = 300, DECEL_MS = 420, FADE_MS = 750;
   const COLORS = ['#ffffff', '#ffffff', '#ffcccc', '#FF4444', '#CC0011', '#FF1A2E', '#FF6633', '#AA0008'];
 
-  let width, height, centerX, centerY;
+  interface Star {
+    x: number; y: number;
+    prevX: number; prevY: number;
+    angle: number;
+    speed: number;
+    width: number;
+    color: string;
+  }
+
+  let width = 0, height = 0, centerX = 0, centerY = 0;
   let speed = 0.8;
-  let phase = 'accel';
+  let phase: 'accel' | 'hold' | 'decel' = 'accel';
   let flashAlpha = 0;
   let flashed = false;
-  let startTime, frameId;
+  let startTime = 0, frameId = 0;
 
   function resize() {
     width = canvas.width = window.innerWidth;
@@ -34,10 +43,10 @@
     centerY = height / 2;
   }
 
-  const random = (min, max) => min + Math.random() * (max - min);
+  const random = (min: number, max: number) => min + Math.random() * (max - min);
 
   // A star moving straight out from the centre. New stars start near the centre.
-  function makeStar(nearCenter) {
+  function makeStar(nearCenter: boolean): Star {
     const angle = Math.random() * Math.PI * 2;
     const distance = nearCenter ? Math.random() * 6 : Math.random() * Math.min(width, height) * 0.5;
     const x = centerX + Math.cos(angle) * distance;
@@ -81,7 +90,7 @@
     ctx.restore();
   }
 
-  function moveStar(star) {
+  function moveStar(star: Star) {
     star.prevX = star.x;
     star.prevY = star.y;
     if (phase === 'accel') star.speed = Math.min(star.speed * ACCEL_RATE, MAX_SPEED * 2.8);
@@ -105,7 +114,7 @@
     ctx.stroke();
   }
 
-  function frame(now) {
+  function frame(now: number) {
     const elapsed = now - startTime;
     if (phase === 'accel' && elapsed >= ACCEL_MS) phase = 'hold';
     if (phase === 'hold' && elapsed >= ACCEL_MS + HOLD_MS) {
@@ -152,7 +161,7 @@
   const PAUSE = 52;                             // between rising and sliding
 
   // Splits the text into letters; they rise in one by one, then the line slides into place.
-  function animateLine(line, text) {
+  function animateLine(line: HTMLElement, text: string) {
     const letters = [...text].map(char => {
       const span = document.createElement('span');
       span.className = 'char';
@@ -160,13 +169,14 @@
       return span;
     });
     line.append(...letters);
-    const totalTime = ({ stagger, duration }) => (letters.length - 1) * stagger + duration;
-    const play = (className, { stagger }) => letters.forEach((span, i) => {
+    type Timing = { stagger: number; duration: number };
+    const totalTime = ({ stagger, duration }: Timing) => (letters.length - 1) * stagger + duration;
+    const play = (className: string, { stagger }: Timing) => letters.forEach((span, i) => {
       span.style.animationDelay = `${i * stagger}ms`;
       span.classList.add(className);
     });
 
-    return new Promise(resolve => {
+    return new Promise<void>(resolve => {
       play('rising', RISE);
       setTimeout(() => {
         letters.forEach(span => { span.style.animationDelay = ''; span.classList.remove('rising'); });
@@ -180,16 +190,16 @@
     });
   }
 
-  const show = (id, delay = 0) => setTimeout(() => document.getElementById(id).classList.add('visible'), delay);
+  const show = (id: string, delay = 0) => setTimeout(() => document.getElementById(id)!.classList.add('visible'), delay);
 
   window.addEventListener('intro-done', () => {
-    document.getElementById('textReveal').classList.add('revealed');
+    document.getElementById('textReveal')!.classList.add('revealed');
     show('eyebrow');
     show('sithFigure');
     setTimeout(async () => {
       await Promise.all([
-        animateLine(document.getElementById('line1'), 'System Online'),
-        animateLine(document.getElementById('line2'), 'Ready for input'),
+        animateLine(document.getElementById('line1')!, 'System Online'),
+        animateLine(document.getElementById('line2')!, 'Ready for input'),
       ]);
       show('heroDivider');
       show('heroBody', 130);
@@ -203,39 +213,41 @@
 (function sith() {
   const SABER_DELAY = 5200, SABER_GROW = 1800; // ms after page load
   const HILT_TOP = 88;                         // the blade grows up from here
-  const blades = [                             // [element, full height, opacity]: glow, middle, core
-    [document.getElementById('sx-so'), 70, 0.4],
-    [document.getElementById('sx-sm'), 66, 0.75],
-    [document.getElementById('sx-sc'), 62, 1],
+  const rect = (id: string) => document.getElementById(id) as unknown as SVGRectElement;
+  const blades: [SVGRectElement, number, number][] = [ // [element, full height, opacity]: glow, middle, core
+    [rect('sx-so'), 70, 0.4],
+    [rect('sx-sm'), 66, 0.75],
+    [rect('sx-sc'), 62, 1],
   ];
-  let firstFrame = null;
+  let firstFrame: number | null = null;
 
-  function growSaber(now) {
+  function growSaber(now: number) {
     firstFrame ??= now;
     const elapsed = now - firstFrame;
     const progress = Math.max(0, Math.min(1, (elapsed - SABER_DELAY) / SABER_GROW));
     const eased = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress; // ease in-out
     for (const [blade, fullHeight, opacity] of blades) {
       const height = fullHeight * eased;
-      blade.setAttribute('height', height);
-      blade.setAttribute('y', HILT_TOP - height);
-      if (progress > 0) blade.style.opacity = opacity;
+      blade.setAttribute('height', String(height));
+      blade.setAttribute('y', String(HILT_TOP - height));
+      if (progress > 0) blade.style.opacity = String(opacity);
     }
     if (elapsed < SABER_DELAY + SABER_GROW + 300) requestAnimationFrame(growSaber);
   }
   requestAnimationFrame(growSaber);
 
   // A bolt flickers on and off, then flickers again after a random wait, forever.
-  function flashBolt(bolt, minWait, maxWait) {
+  function flashBolt(bolt: SVGElement, minWait: number, maxWait: number) {
     setTimeout(() => {
-      const flicker = [[0, '1'], [80, '0.25'], [140, '1'], [200, '0.6'], [260, '1'], [340, '0']];
+      const flicker: [number, string][] = [[0, '1'], [80, '0.25'], [140, '1'], [200, '0.6'], [260, '1'], [340, '0']];
       for (const [at, opacity] of flicker) setTimeout(() => { bolt.style.opacity = opacity; }, at);
       flashBolt(bolt, minWait, maxWait);
     }, minWait + Math.random() * (maxWait - minWait));
   }
 
   setTimeout(() => {
-    flashBolt(document.getElementById('sx-b1'), 1200, 3500);
-    setTimeout(() => flashBolt(document.getElementById('sx-b2'), 1800, 4200), 700);
+    const bolt = (id: string) => document.getElementById(id) as unknown as SVGElement;
+    flashBolt(bolt('sx-b1'), 1200, 3500);
+    setTimeout(() => flashBolt(bolt('sx-b2'), 1800, 4200), 700);
   }, 7000);
 })();
