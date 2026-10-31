@@ -1,4 +1,4 @@
-// Local server for the release form.
+// Local server for the release form, built with Express.
 //
 // It does three things:
 //   1. Serves the form page (the files in public/).
@@ -15,7 +15,7 @@
 //   GET  /api/tags?app=web-app the app's OLD / NEW tags
 //   POST /api/release          create the release page
 //
-// This file shows what each of those does, and handleRequest() at the bottom picks one by its path. The details live in lib/:
+// This file shows what each of those does. The details live in lib/:
 //   settings.ts              config.json, the port, the paths and Confluence's address
 //   helpers.ts               fail() and other small helpers
 //   git.ts                   apps, tags and merged PRs
@@ -23,48 +23,67 @@
 //   confluence.ts            Confluence's REST API: checking the token, creating a page
 //   release-page-content.ts  the page's table and info box
 //   browser.ts               opening the new page in the browser
-//   web.ts                   who may call the server, reading requests, sending answers
+//   web.ts                   who may call the server
 //
 // Every answer to the form is JSON: { ok: true, ... } or { ok: false, message: "what went wrong" }.
+// A route stops with fail(status, message); the error handler at the bottom turns that into the answer.
 
-import http from 'node:http';
-import { config, PORT, CONFLUENCE_URL } from './lib/settings';
-import { fail, textValue, HttpError } from './lib/helpers';
-import * as git from './lib/git';
-import { requireToken } from './lib/token';
-import * as confluence from './lib/confluence';
-import { releasePageContent } from './lib/release-page-content';
-import { openInBrowser } from './lib/browser';
-import * as web from './lib/web';
+import express from 'express';
+import type { NextFunction, Request, Response } from 'express';
+import { config, PORT, PUBLIC_DIR, CONFLUENCE_URL } from './lib/settings.ts';
+import { fail, textValue, HttpError } from './lib/helpers.ts';
+import * as git from './lib/git.ts';
+import { requireToken } from './lib/token.ts';
+import * as confluence from './lib/confluence.ts';
+import { releasePageContent } from './lib/release-page-content.ts';
+import { openInBrowser } from './lib/browser.ts';
+import { isFromOwnPage } from './lib/web.ts';
+
+const server = express();
+server.disable('x-powered-by');
+
+// Only this computer's own page may use the server.
+server.use((request, _response, next) => {
+  if (!isFromOwnPage(request)) {
+    fail(403, `This server only answers its own page. Open it as http://localhost:${PORT}/ or http://127.0.0.1:${PORT}/.`);
+  }
+  next();
+});
+
+// The form page: "/" is index.html, "/style.css" is public/style.css, and so on.
+server.use(express.static(PUBLIC_DIR));
+
+// The JSON the form sends. At most 100 KB.
+server.use(express.json({ limit: '100kb' }));
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GET /api/token
 // Is there a working token in server/.env? Never sends the token itself.
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function checkToken(): Promise<{ message: string }> {
+server.get('/api/token', async (_request, response) => {
   const token = requireToken();
   const userName = await confluence.checkTokenWithConfluence(token);
-  return { message: `Authenticated as ${userName}` };
-}
+  response.json({ ok: true, message: `Authenticated as ${userName}` });
+});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GET /api/apps
 // The app names, e.g. { apps: ['admin-app', 'web-app'] }
 // ═══════════════════════════════════════════════════════════════════════════
 
-function listApps(): { apps: string[] } {
-  return { apps: git.listApps() };
-}
+server.get('/api/apps', (_request, response) => {
+  response.json({ ok: true, apps: git.listApps() });
+});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GET /api/tags?app=web-app
 // The app's OLD / NEW tags, newest first, e.g. { tags: ['web-app-12-NEW', 'web-app-12-OLD', ...] }
 // ═══════════════════════════════════════════════════════════════════════════
 
-function listTags(app: string): { tags: string[] } {
-  return { tags: git.listTags(app) };
-}
+server.get('/api/tags', (request, response) => {
+  response.json({ ok: true, tags: git.listTags(textValue(request.query.app)) });
+});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // POST /api/release
@@ -72,15 +91,23 @@ function listTags(app: string): { tags: string[] } {
 // Checks the form, reads the merged PRs, creates the release page and opens it.
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function createRelease(body: Record<string, unknown>): Promise<{ pageUrl: string; pullRequestCount: number }> {
+server.post('/api/release', async (request, response) => {
   const token = requireToken();
 
   // 1. Check what the form sent.
-  const app = textValue(body.app);
-  const from = textValue(body.from);
-  const to = textValue(body.to);
-  const version = textValue(body.version);
-  const date = textValue(body.date);
+  if (!request.is('application/json')) {
+    fail(415, 'Requests to the release server must be sent as JSON.');
+  }
+  const body: unknown = request.body;
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    fail(400, 'The request must be a JSON object, e.g. { "app": "web-app", ... }.');
+  }
+  const form = body as Record<string, unknown>;
+  const app = textValue(form.app);
+  const from = textValue(form.from);
+  const to = textValue(form.to);
+  const version = textValue(form.version);
+  const date = textValue(form.date);
 
   if (!version || version.length > 50) {
     fail(400, 'Enter a version, e.g. 1.4.0 (at most 50 characters).');
@@ -116,63 +143,48 @@ async function createRelease(body: Record<string, unknown>): Promise<{ pageUrl: 
   // 4. Open it.
   console.log(`[release] created ${pageUrl} with ${pullRequests.length} PRs`);
   openInBrowser(pageUrl);
-  return { pageUrl, pullRequestCount: pullRequests.length };
-}
+  response.json({ ok: true, pageUrl, pullRequestCount: pullRequests.length });
+});
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Every request goes through here
+// Anything else, and every error
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function handleRequest(request: http.IncomingMessage, response: http.ServerResponse): Promise<void> {
-  try {
-    // Only this computer's own page may use the server.
-    if (!web.isFromOwnPage(request)) {
-      fail(403, `This server only answers its own page. Open it as http://localhost:${PORT}/ or http://127.0.0.1:${PORT}/.`);
-    }
+server.use(request => {
+  fail(404, `The release server has no "${request.method} ${request.path}".`);
+});
 
-    const method = request.method ?? 'GET';
-    const { pathname, searchParams } = new URL(request.url ?? '/', 'http://localhost');
+// Express calls this for every error: from fail(), from express.json(), or unexpected ones.
+// (Express knows it's the error handler because it takes four arguments.)
+server.use((error: unknown, _request: Request, response: Response, _next: NextFunction) => {
+  let status = 500;
+  let message = 'Something went wrong in the release server. The terminal it runs in shows the details.';
 
-    // The form page: "/" is index.html, "/style.css" is public/style.css, and so on.
-    const fileName = web.publicFileFor(pathname);
-    if (method === 'GET' && fileName) {
-      web.sendPublicFile(response, fileName);
-      return;
-    }
+  // express.json() marks its errors with a "type".
+  const bodyError = (error as { type?: string }).type;
 
-    // Everything else is the API.
-    let answer: object;
-    if (method === 'GET' && pathname === '/api/token') {
-      answer = await checkToken();
-    } else if (method === 'GET' && pathname === '/api/apps') {
-      answer = listApps();
-    } else if (method === 'GET' && pathname === '/api/tags') {
-      answer = listTags(searchParams.get('app') ?? '');
-    } else if (method === 'POST' && pathname === '/api/release') {
-      answer = await createRelease(await web.readJsonBody(request));
-    } else {
-      fail(404, `The release server has no "${method} ${pathname}".`);
-    }
-
-    web.sendJson(response, 200, { ok: true, ...answer });
-  } catch (error) {
-    // Our own errors (from fail) have a status. Anything else is unexpected.
-    const status = error instanceof HttpError ? error.status : 500;
-    if (status >= 500) console.error('[server]', error instanceof Error ? error.message : error);
-
-    // Unexpected errors may contain internals, so the form only gets a pointer to the terminal.
-    const message = error instanceof HttpError
-      ? error.message
-      : 'Something went wrong in the release server. The terminal it runs in shows the details.';
-    web.sendJson(response, status, { ok: false, message });
+  if (error instanceof HttpError) {
+    // Our own errors, from fail().
+    status = error.status;
+    message = error.message;
+  } else if (bodyError === 'entity.parse.failed') {
+    status = 400;
+    message = 'The request isn\'t valid JSON.';
+  } else if (bodyError === 'entity.too.large') {
+    status = 413;
+    message = 'The request is too large (over 100 KB).';
   }
-}
+
+  // Unexpected errors may contain internals, so the form only gets a pointer to the terminal.
+  if (status >= 500) console.error('[server]', error instanceof Error ? error.message : error);
+  response.status(status).json({ ok: false, message });
+});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // Start
 // ═══════════════════════════════════════════════════════════════════════════
 
 // 127.0.0.1: only this computer can reach the server.
-http.createServer(handleRequest).listen(PORT, '127.0.0.1', () => {
+server.listen(PORT, '127.0.0.1', () => {
   console.log(`Server running at http://localhost:${PORT}/ (Confluence: ${CONFLUENCE_URL})`);
 });

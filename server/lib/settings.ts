@@ -15,8 +15,7 @@ export interface Config {
 }
 
 // The server folder (the one with server.ts, config.json and .env).
-// This file runs from dist/lib/, two folders below it.
-export const SERVER_DIR = path.join(__dirname, '..', '..');
+export const SERVER_DIR = path.join(import.meta.dirname, '..');
 
 // Read when the server starts, so a change to config.json needs a restart.
 export const config: Config = JSON.parse(fs.readFileSync(path.join(SERVER_DIR, 'config.json'), 'utf8'));

@@ -1,4 +1,5 @@
-// The server: server.ts and lib/*.ts, compiled to dist/ for Node.
+// Node runs the .ts files as they are: it only strips the types, it never checks them.
+// "npm run check" checks them with TypeScript; nothing is compiled.
 {
   "compilerOptions": {
     "target": "ES2022",
@@ -6,8 +7,10 @@
     "lib": ["ES2022"],
     "types": ["node"],
     "strict": true,
-    "rootDir": ".",
-    "outDir": "dist"
+    "noEmit": true,
+    "allowImportingTsExtensions": true, // Node needs "./lib/git.ts", not "./lib/git"
+    "erasableSyntaxOnly": true,         // only TypeScript that Node can strip, e.g. no enum
+    "verbatimModuleSyntax": true        // type-only imports must say "import type"
   },
   "include": ["server.ts", "lib"]
 }

@@ -1,7 +1,7 @@
 // The Confluence token, read from server/.env:  CONFLUENCE_TOKEN=<your token>
 import fs from 'node:fs';
-import { ENV_FILE } from './settings';
-import { fail } from './helpers';
+import { ENV_FILE } from './settings.ts';
+import { fail } from './helpers.ts';
 
 // The token line in .env, e.g.  CONFLUENCE_TOKEN=abc123  or  CONFLUENCE_TOKEN="abc123"
 // The token itself (without quotes) is captured as group 1.

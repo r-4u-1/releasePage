@@ -2,8 +2,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { config, SERVER_DIR } from './settings';
-import { fail, escapeForRegExp } from './helpers';
+import { config, SERVER_DIR } from './settings.ts';
+import { fail, escapeForRegExp } from './helpers.ts';
 
 // One merged PR on the release page.
 export interface PullRequest {

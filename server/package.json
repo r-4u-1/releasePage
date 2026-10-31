@@ -1,18 +1,22 @@
 {
   "name": "server",
   "private": true,
-  "main": "dist/server.js",
+  "type": "module",
+  "main": "server.ts",
   "scripts": {
-    "build": "tsc -b . ../client",
-    "start": "npm run build && node dist/server.js",
-    "release-page": "npm run build && concurrently --kill-others --names tsc,server \"tsc -b . ../client --watch --preserveWatchOutput\" \"node --watch dist/server.js\""
+    "start": "node server.ts",
+    "release-page": "node --watch server.ts",
+    "check": "tsc"
   },
   "engines": {
-    "node": ">=18.11"
+    "node": ">=22.18"
+  },
+  "dependencies": {
+    "express": "^5.3.0"
   },
   "devDependencies": {
+    "@types/express": "^5.0.6",
     "@types/node": "^26.6.6",
-    "concurrently": "^10.0.6",
     "typescript": "^7.0.2"
   }
 }

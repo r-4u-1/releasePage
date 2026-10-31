@@ -40,7 +40,7 @@ You pick an app, two git tags, a version and a release date. The server:
 
 ## Setup
 
-Requirements: **Node.js 18.11 or newer** and **git**. The code is TypeScript; `npm install` in the `server` folder gets the compiler (it's only needed to build, the server itself uses Node's built-in modules).
+Requirements: **Node.js 22.18 or newer** and **git**. The server is an [Express](https://expressjs.com/) app written in TypeScript, and Node runs the `.ts` files directly: there's no build step. `npm install` in the `server` folder gets Express (and TypeScript, for `npm run check`). The form page is plain JavaScript.
 
 **1. Put the tool in the monorepo.** The server lists the monorepo's top-level folders as apps:
 
@@ -198,7 +198,7 @@ Everything is in [`server/config.json`](server/config.json).
 | `appsWithVerification` | Apps whose page gets the **isVerified** and **Note** columns and the info box. |
 | `verificationInfo` | The text in the info box. |
 
-`npm run release-page` compiles the TypeScript, then recompiles and restarts the server whenever a `.ts` file changes; `npm start` compiles once and starts it. `npm run build` only compiles. A change to `config.json` needs a restart.
+`npm run release-page` restarts the server when one of its `.ts` files changes; `npm start` doesn't. A change to `config.json` needs a restart. Node doesn't check the types when it runs the server; `npm run check` does.
 
 ---
 
@@ -206,16 +206,16 @@ Everything is in [`server/config.json`](server/config.json).
 
 ```
 README.md               This file
-client/                 The form's scripts, in TypeScript. Compiled to public/*.js
-├── form.ts             The form: field checks, apps → tags, creating the page
-├── effects.ts          The hyperspeed intro, the heading letters and the Sith figure
-└── tsconfig.json       How they're compiled for the browser
 public/                 The form, served at http://localhost:3000/
 ├── index.html          The page's markup
 ├── style.css           All styles and CSS animations
-└── form.js, effects.js Compiled from client/ (gitignored)
+├── api.js              Calls the release server, with readable errors
+├── fields.js           $() and showing each field's state (valid / error)
+├── date-field.js       The date field: automatic dashes and the calendar
+├── form.js             The form: version, token, apps → tags, creating the page
+└── effects.js          The hyperspeed intro, the heading letters and the Sith figure
 server/
-├── server.ts           What each API path does, and which path runs what
+├── server.ts           The Express app: each API route and what it does, plus the error handler
 ├── lib/                The details server.ts uses
 │   ├── settings.ts     config.json, the port, the paths and Confluence's address
 │   ├── helpers.ts      fail() and other small helpers
@@ -224,10 +224,9 @@ server/
 │   ├── confluence.ts   Checks the token, creates the page
 │   ├── release-page-content.ts  The page's table and info box
 │   ├── browser.ts      Opens the new page in the browser
-│   └── web.ts          Who may call the server, reading requests, sending answers
-├── dist/               The compiled server that Node runs (gitignored)
-├── tsconfig.json       How the server is compiled
-├── package.json        npm scripts: build, start, release-page
+│   └── web.ts          Who may call the server
+├── tsconfig.json       TypeScript settings for npm run check
+├── package.json        npm scripts: start, release-page, check
 ├── config.json         Settings
 └── .env                Your Confluence token (you create it; gitignored)
 ```
