@@ -10,7 +10,7 @@ You pick an app, two git tags, a version and a release date. The server:
 4. opens the new page in your browser.
 
 ```
- Form (public/)               Local server (server/)                 Outside
+ Form (the page)              Local server (release-page.ts)         Outside
 ┌──────────────────┐        ┌──────────────────────────────┐
 │ Token status     │◀──────│ check .env token ─────────────┼──▶ Confluence
 │ App              │──────▶│ list apps / tags ─────────────┼──▶ git (app folder)
@@ -40,9 +40,9 @@ You pick an app, two git tags, a version and a release date. The server:
 
 ## Setup
 
-Requirements: **Node.js 22.18 or newer** (or 23.6+) and **git**. Nothing to install: the code is TypeScript, and Node runs it as it is by removing the types. The server only uses Node's built-in modules, so there's no `package.json` and no `node_modules`.
+Requirements: **Node.js 22.18 or newer** (or 23.6+) and **git**. Nothing to install: everything is in one TypeScript file, [`release-page.ts`](release-page.ts), which Node runs as it is by removing the types. It only uses Node's built-in modules, so there's no `package.json` and no `node_modules`.
 
-**1. Put the tool in the monorepo.** The server lists the monorepo's top-level folders as apps:
+**1. Put `release-page.ts` in its own folder of the monorepo**, e.g. `release-page/`. Its own folder keeps its `.env` away from other tools (see [The token](#the-token)). The server lists the monorepo's top-level folders as apps:
 
 ```
 monorepo/
@@ -50,11 +50,11 @@ monorepo/
 ├── admin-app/           ← listed
 ├── docs/                ← not listed
 └── release-page/        ← this tool (not listed)
-    ├── public/
-    └── server/
+    ├── release-page.ts
+    └── .env             ← your token (step 6)
 ```
 
-**2. Set the Confluence address.** In [`server/config.json`](server/config.json), replace the example `confluenceBaseUrl` with yours. Use `https://`, so the token is encrypted on its way.
+**2. Set the Confluence address.** In the **SETTINGS** at the top of [`release-page.ts`](release-page.ts), replace the example `confluenceBaseUrl` with yours. Use `https://`, so the token is encrypted on its way.
 
 **3. Add each app's parent page.** In `parentPageIds`, map each app to the Confluence page its release pages go under. The page ID is in the page's address (`…pageId=123456`) or under **••• → Page information**.
 
@@ -62,18 +62,18 @@ monorepo/
 
 **5. Get a Confluence personal access token.** In Confluence: **your profile picture → Settings → Personal Access Tokens → Create token**.
 
-**6. Add the token to `server/.env`** (create the file if it doesn't exist):
+**6. Add the token to `.env` next to `release-page.ts`** (create the file if it doesn't exist):
 
 ```
 CONFLUENCE_TOKEN=<your token>
 ```
 
-`server/.gitignore` already lists `.env`, so the token is never committed. See [The token](#the-token).
+Make sure `.env` is in the monorepo's `.gitignore`, so the token is never committed. The server warns at start when git doesn't ignore it. See [The token](#the-token).
 
-**7. Start the server** in the `server` folder and open **http://localhost:3000/**.
+**7. Start the server** and open **http://localhost:3000/**.
 
 ```bash
-node server.ts
+node release-page/release-page.ts
 ```
 
 ---
@@ -81,7 +81,7 @@ node server.ts
 ## Walking through the form
 
 ### 1. Confluence token
-There's no token field. At the top of the form you see whether the server found a working token in `server/.env`:
+There's no token field. At the top of the form you see whether the server found a working token in `.env`:
 
 - **● Confluence token found in .env · Authenticated as &lt;you&gt;** (green): ready.
 - **● No Confluence token found. Add the line CONFLUENCE_TOKEN=&lt;your token&gt; to …\.env** (red): add it, then click **Check again**. No restart needed.
@@ -133,7 +133,7 @@ Creates the release page and opens it in your browser. Under the button you see 
 
 ## How apps, tags and PRs are found
 
-**Apps** are the top-level folders of the monorepo whose name matches `appPattern` in `config.json`. The default is `*-app`, so `web-app` and `admin-app` are apps, but `docs`, `shared-lib` or `app-web` are not. `*` matches anything. For broad patterns like `*`, folders starting with `.`, `node_modules`, and the folder this tool lives in are left out.
+**Apps** are the top-level folders of the monorepo whose name matches `appPattern` in the settings. The default is `*-app`, so `web-app` and `admin-app` are apps, but `docs`, `shared-lib` or `app-web` are not. `*` matches anything. For broad patterns like `*`, folders starting with `.`, `node_modules`, and the folder this tool lives in are left out.
 
 **Tags** must be named after the app folder:
 
@@ -159,7 +159,7 @@ If someone else pushed the last commit to a PR's branch, they're shown instead.
 
 ## The token
 
-The server reads the token from **`server/.env`**, from this line:
+The server reads the token from **`.env` in the folder `release-page.ts` is in**, from this line:
 
 ```
 CONFLUENCE_TOKEN=<your token>
@@ -170,8 +170,8 @@ Quotes around the token are fine. The file is read again on every check, so addi
 The token **never reaches the page**: the form only learns whether it works and whose it is. The tool never writes to `.env`.
 
 ### Keeping the token safe
-- **Kept out of git:** `server/.gitignore` lists `.env`.
-- **Only this tool reads it:** a token in the monorepo's root `.env` could be loaded by other tools there (dev servers, Docker Compose, build tools). In `server/.env`, only this server sees it.
+- **Kept out of git:** `.env` must be in `.gitignore`. The server checks this with git when it starts, and warns if not.
+- **Only this tool reads it:** a token in the monorepo's root `.env` could be loaded by other tools there (dev servers, Docker Compose, build tools). In the tool's own folder, only this server sees it.
 - **The server only accepts requests from this computer:** it listens on `127.0.0.1` only.
 - **And only from its own page:** requests from other websites, or addressed to it under any other name than `localhost` or `127.0.0.1`, are refused.
 
@@ -181,49 +181,39 @@ Anything else running on your computer can still reach it, so don't keep the tok
 
 ## Configuration
 
-Everything is in [`server/config.json`](server/config.json).
+Everything is in the **SETTINGS** at the top of [`release-page.ts`](release-page.ts).
 
 | Setting | Meaning |
 |---|---|
 | `port` | Port the server listens on. The `PORT` environment variable overrides it. |
 | `appPattern` | Which top-level folders are apps, e.g. `*-app`. `*` matches anything. |
-| `repoRoot` | Monorepo root, relative to the `server` folder. Empty means "the git repo this tool is inside". |
+| `repoRoot` | Monorepo root, relative to the folder `release-page.ts` is in. Empty means "the git repo it's inside". |
 | `confluenceBaseUrl` | Confluence address. Cloud: `https://<site>.atlassian.net/wiki`. |
 | `confluenceEmail` | Empty for Data Center (the token is sent as `Bearer`). For Cloud, the Atlassian account email that owns the API token. |
 | `parentPageIds` | For each app, the ID of the Confluence page its release pages are created under. |
 | `appsWithVerification` | Apps whose page gets the **isVerified** and **Note** columns and the info box. |
 | `verificationInfo` | The text in the info box. |
 
-A change to `config.json` or the server's `.ts` files needs a restart; `node --watch server.ts` restarts it by itself when a server file changes. A change to `client/` or `public/` only needs a page reload.
+A change to the file needs a restart; `node --watch release-page.ts` restarts it by itself whenever you save.
 
 ---
 
 ## Files
 
 ```
-README.md               This file
-client/                 The form's scripts, in TypeScript. Served as /form.js and /effects.js, types removed
-├── form.ts             The form: field checks, apps → tags, creating the page
-├── effects.ts          The hyperspeed intro, the heading letters and the Sith figure
-└── tsconfig.json       How the editor checks them
-public/                 The form, served at http://localhost:3000/
-├── index.html          The page's markup
-└── style.css           All styles and CSS animations
-server/
-├── server.ts           What each API path does, and which path runs what
-├── lib/                The details server.ts uses
-│   ├── settings.ts     config.json, the port, the paths and Confluence's address
-│   ├── helpers.ts      fail() and other small helpers
-│   ├── git.ts          Apps, tags and merged PRs
-│   ├── token.ts        Reads the token from .env
-│   ├── confluence.ts   Checks the token, creates the page
-│   ├── release-page-content.ts  The page's table and info box
-│   ├── browser.ts      Opens the new page in the browser
-│   └── web.ts          Who may call the server, reading requests, sending answers
-├── tsconfig.json       How the editor checks the server
-├── config.json         Settings
-└── .env                Your Confluence token (you create it; gitignored)
+release-page.ts   Everything, from top to bottom:
+                    SETTINGS       what to change for your monorepo
+                    GIT            apps, tags and merged PRs
+                    TOKEN          reads the token from .env
+                    CONFLUENCE     checks the token, creates the page
+                    PAGE CONTENT   the page's table and info box
+                    API / SERVER   what each API path does
+                    THE FORM PAGE  the form's HTML, CSS and browser scripts
+.env              Your Confluence token (you create it; keep it in .gitignore)
+README.md         This file
 ```
+
+The browser scripts are TypeScript functions in the same file. The server sends their source to the page, with the types already removed by Node, so they may only use what's inside them and the browser's own globals.
 
 ---
 
@@ -233,7 +223,7 @@ All answers are JSON with `ok: true/false`. Errors come with a `message` and a m
 
 | Method | Path | Does |
 |---|---|---|
-| `GET` | `/api/token` | Checks the token in `server/.env` with Confluence. Returns `message` ("Authenticated as …"), or an error saying the token is missing or rejected. Never returns the token. |
+| `GET` | `/api/token` | Checks the token in `.env` with Confluence. Returns `message` ("Authenticated as …"), or an error saying the token is missing or rejected. Never returns the token. |
 | `GET` | `/api/apps` | The app names. |
 | `GET` | `/api/tags?app=…` | The app's `OLD` / `NEW` tag names, highest number first. |
 | `POST` | `/api/release` | `{ app, from, to, version, date }`: creates the release page, opens it, and returns `pageUrl` and `pullRequestCount`. |
@@ -244,23 +234,23 @@ All answers are JSON with `ok: true/false`. Errors come with a `message` and a m
 
 | You see | Try |
 |---|---|
-| **This page isn't connected to the release server** | The page was opened from somewhere else, e.g. VS Code's Live Server or straight from the file. Start the server with `node server.ts` in the `server` folder and open **http://localhost:3000/**. |
-| **Can't reach the release server** | The server isn't running. Start it with `node server.ts` in the `server` folder. |
-| **No Confluence token found** | Add `CONFLUENCE_TOKEN=<your token>` to `server/.env` (the message shows the exact path), then click **Check again**. |
-| **Confluence rejected the token** | The token is wrong or expired. Create a new one and replace it in `server/.env`. For Cloud, also set `confluenceEmail`. |
-| **Can't find Confluence at …** / **Can't reach Confluence at …** / **… refused the connection** | Check `confluenceBaseUrl` in `server/config.json`, and that you're on the network or VPN that can reach Confluence. |
+| **This page isn't connected to the release server** | The page was opened from somewhere else, e.g. VS Code's Live Server or straight from the file. Start the server with `node release-page.ts` and open **http://localhost:3000/**. |
+| **Can't reach the release server** | The server isn't running. Start it with `node release-page.ts`. |
+| **No Confluence token found** | Add `CONFLUENCE_TOKEN=<your token>` to `.env` (the message shows the exact path), then click **Check again**. |
+| **Confluence rejected the token** | The token is wrong or expired. Create a new one and replace it in `.env`. For Cloud, also set `confluenceEmail`. |
+| **Can't find Confluence at …** / **Can't reach Confluence at …** / **… refused the connection** | Check `confluenceBaseUrl` in the settings, and that you're on the network or VPN that can reach Confluence. |
 | **Confluence at … didn't answer within 30 seconds** | Usually the network or VPN. Check that you can open Confluence in the browser. |
 | **Can't verify the security certificate of Confluence** | Your company inspects HTTPS traffic. Start Node with `NODE_EXTRA_CA_CERTS=<company-root.pem>`. Never use `NODE_TLS_REJECT_UNAUTHORIZED=0`. |
 | **Confluence at … has nothing at /rest/api/… (HTTP 404)** or **… sent the request somewhere else** | `confluenceBaseUrl` doesn't point at Confluence itself. For Confluence Cloud it ends in `/wiki`. |
 | **Your Confluence account isn't allowed to do this** | Your account can't see the parent page or add pages in its space. Ask a space admin. |
-| **&lt;app&gt; has no parent page yet** | Add the app to `parentPageIds` in `server/config.json`. |
+| **&lt;app&gt; has no parent page yet** | Add the app to `parentPageIds` in the settings. |
 | **There's no Confluence page with ID …** | The ID in `parentPageIds` is wrong, or your account can't see that page. |
 | **No merged PRs in &lt;app&gt; between …** | No commit between the tags has `Merged PR` in its message and changes the app's folder. Check that **From tag** is the older tag and **To tag** the newer one. |
 | **Confluence said: A page with this title already exists** | A release page for this app and date already exists in the space. Rename or delete it in Confluence. |
-| App list says **No apps found** | No top-level folder matches `appPattern`. Check the folder names, or `repoRoot` in `config.json`. |
+| App list says **No apps found** | No top-level folder matches `appPattern`. Check the folder names, or `repoRoot` in the settings. |
 | **No app-x-&lt;n&gt;-OLD / -NEW tags found** | The app has no tags named like `app-x-12-OLD`. Fetch them with `git fetch --tags`. |
 | **This server only answers its own page** | Open the page as `http://localhost:3000/` or `http://127.0.0.1:3000/`. |
 | **Git isn't installed, or isn't on the PATH** | Install git, then restart the server. |
-| **ERR_UNKNOWN_FILE_EXTENSION ".ts"** when starting | Your Node is older than 22.18. Update Node, or start with `node --experimental-strip-types server.ts`. |
+| **ERR_UNKNOWN_FILE_EXTENSION ".ts"** when starting | Your Node is older than 22.18. Update Node, or start with `node --experimental-strip-types release-page.ts`. |
 | `EADDRINUSE` when starting | Port 3000 is in use. Stop the other program, or start with a different `PORT`. |
 | The new page doesn't open by itself | Use the **open in Confluence** link under the button. |
