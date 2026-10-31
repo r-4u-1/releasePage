@@ -1,10 +1,5 @@
 'use strict';
-// The release form: checks each field, loads apps and tags, and creates the release page.
-// Uses api() from api.js and the field helpers from fields.js. The date field is in date-field.js.
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   VERSION
-═══════════════════════════════════════════════════════════════════════════ */
 function checkVersion() {
   const ok = $('version').value.trim() !== '';
   if (ok) showValid('version');
@@ -17,13 +12,8 @@ $('version').addEventListener('input', () => {
   if ($('f-version').classList.contains('has-error')) checkVersion();
 });
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   TOKEN — read by the server from server/.env
-   The page never sees the token. It only shows whether the server found one that works.
-═══════════════════════════════════════════════════════════════════════════ */
 let tokenWorks = false;
 
-// Shows the token status line: a green dot when the token works, a red one with the reason when not.
 function showTokenStatus(works, text) {
   tokenWorks = works;
   $('token-status').classList.remove('checking');
@@ -39,18 +29,13 @@ async function checkToken() {
     const result = await api('/api/token');
     showTokenStatus(true, 'Confluence token found in .env · ' + result.message);
   } catch (err) {
-    // e.g. "No Confluence token found. Add the line CONFLUENCE_TOKEN=<your token> to C:\monorepo\release-page\server\.env"
     showTokenStatus(false, err.message);
   }
 }
 
-// After adding the token to .env, "Check again" picks it up. No restart needed.
 $('token-recheck').addEventListener('click', checkToken);
 checkToken();
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   APP → TAGS
-═══════════════════════════════════════════════════════════════════════════ */
 const appSelect = $('app'), fromSelect = $('tagfrom'), toSelect = $('tagto');
 
 function fillSelect(select, values, placeholder) {
@@ -63,7 +48,6 @@ async function loadApps() {
     fillSelect(appSelect, apps, apps.length ? '— Select app —' : 'No apps found');
   } catch (err) {
     fillSelect(appSelect, [], 'Could not load apps');
-    // The token line above already explains a missing connection in full.
     showError('app', err.notConnected ? 'Could not load the apps: the page isn\'t connected to the release server (see above).' : err.message);
   }
 }
@@ -78,7 +62,6 @@ async function loadTags(app) {
     const { tags } = await api(`/api/tags?app=${encodeURIComponent(app)}`);
     if (!tags.length) return showError('app', `No ${app}-<n>-OLD / -NEW tags found`);
     showValid('app');
-    // Tags come highest number first, so the newest OLD/NEW pair is picked by default.
     const olds = tags.filter(tag => tag.endsWith('-OLD'));
     const news = tags.filter(tag => tag.endsWith('-NEW'));
     fillSelect(fromSelect, olds, '— Select —');
@@ -94,11 +77,6 @@ async function loadTags(app) {
 appSelect.addEventListener('change', () => loadTags(appSelect.value));
 loadApps();
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   CREATE PAGE — the server creates the Confluence page from these values
-═══════════════════════════════════════════════════════════════════════════ */
-
-// Marks every missing or unchecked field. True when everything is ready.
 function checkAll() {
   let ok = checkVersion();
   if (!/^\d{4}-\d{2}-\d{2}$/.test($('eventdate').value.trim())) {
@@ -135,7 +113,6 @@ $('mainForm').addEventListener('submit', async event => {
   status.className = 'status-msg';
 
   try {
-    // The server also opens the new page in the browser; this link is in case that didn't work.
     const { pageUrl, pullRequestCount } = await api('/api/release', release);
     const link = Object.assign(document.createElement('a'), {
       href: pageUrl, target: '_blank', rel: 'noopener', textContent: 'open in Confluence',

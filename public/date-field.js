@@ -1,16 +1,11 @@
 'use strict';
-// The date field: typing with automatic dashes, checking the date, and the calendar popup.
-// Uses $, setFilled and the show… helpers from fields.js.
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   DATE — typed as YYYY-MM-DD (dashes added for you) or picked in the calendar
-═══════════════════════════════════════════════════════════════════════════ */
 (function dateField() {
   const input = $('eventdate'), popup = $('cal-pop'), button = $('date-btn');
   const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June',
                   'July', 'August', 'September', 'October', 'November', 'December'];
   const today = new Date();
-  let shown = { year: today.getFullYear(), month: today.getMonth() }; // month the calendar shows
+  let shown = { year: today.getFullYear(), month: today.getMonth() };
 
   const isoDate = (y, m, d) => `${String(y).padStart(4, '0')}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
   const ISO = /^\d{4}-\d{2}-\d{2}$/;
@@ -26,7 +21,6 @@
     showValid('eventdate');
   }
 
-  // Typing "20261014" becomes "2026-10-14".
   input.addEventListener('input', () => {
     const digits = input.value.replace(/\D/g, '').slice(0, 8);
     const masked = [digits.slice(0, 4), digits.slice(4, 6), digits.slice(6)].filter(Boolean).join('-');
@@ -39,7 +33,6 @@
   });
   input.addEventListener('blur', () => { if (input.value.trim()) checkDate(); });
 
-  // One day button. `month` may be -1 or 12: Date rolls it into the next or previous year.
   function dayButton(year, month, day, otherMonth) {
     const date = new Date(year, month, day);
     const value = isoDate(date.getFullYear(), date.getMonth(), date.getDate());
@@ -60,7 +53,6 @@
     return button;
   }
 
-  // Weeks start on Monday. Days from the months around fill the first and last week.
   function render() {
     const { year, month } = shown;
     $('cal-lbl').textContent = `${MONTHS[month]} ${year}`;

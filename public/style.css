@@ -1,35 +1,3 @@
-/* ═══════════════════════════════════════════════════════════════════════════
-   STYLES FOR THE RELEASE FORM
-
-   Part 1 — the page itself, in the order things appear on screen:
-     1. Colours and basics
-     2. Page layout (left panel + right panel)
-     3. Left panel text
-     4. Form card
-     5. Form fields
-     6. Field states (error, valid)
-     7. Date field and calendar
-     8. Token status line
-     9. Create page button and result message
-    10. Small screens
-
-   Part 2 — advanced: animations and effects (at the bottom)
-    11. Hyperspeed intro
-    12. Left panel reveal (fade-ins and the letter-by-letter heading)
-    13. Sith figure
-    14. Small animations (form card, calendar, shake, spinner)
-═══════════════════════════════════════════════════════════════════════════ */
-
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   PART 1 — THE PAGE
-═══════════════════════════════════════════════════════════════════════════ */
-
-/* ─────────────────────────────────────────────────────────────────────────
-   1. COLOURS AND BASICS
-───────────────────────────────────────────────────────────────────────── */
-
-/* Every element's size includes its padding and border, and nothing gets default spacing. */
 *,
 *::before,
 *::after {
@@ -39,28 +7,24 @@
 }
 
 :root {
-  /* Reds */
-  --red:          #C0001A;  /* main red: button, lines, selected day */
-  --red-hot:      #FF1A2E;  /* brighter red: hover */
+  --red:          #C0001A;
+  --red-hot:      #FF1A2E;
 
-  /* Status colours */
-  --ok:           #22C55E;  /* green: valid field, working token */
-  --err:          #FF3333;  /* red border of a field with an error */
-  --err-label:    #FF5555;  /* red text of an error */
+  --ok:           #22C55E;
+  --err:          #FF3333;
+  --err-label:    #FF5555;
 
-  /* Backgrounds, from the page to the inputs */
-  --bg-body:      #0B0004;  /* the whole page */
-  --bg-card:      #0E0007;  /* the form card */
-  --bg-input:     #160009;  /* an input */
-  --bg-input-f:   #1E000D;  /* an input while you type in it ("f" = focused) */
+  --bg-body:      #0B0004;
+  --bg-card:      #0E0007;
+  --bg-input:     #160009;
+  --bg-input-f:   #1E000D;
 
-  /* Text and borders */
   --white:        #FFFFFF;
-  --text-input:   rgba(255, 220, 220, 0.92);  /* text you type */
-  --label:        rgba(255, 160, 160, 0.62);  /* a label inside an empty field */
-  --label-f:      rgba(220, 50, 70, 0.95);    /* a label above a filled or focused field */
-  --border:       rgba(192, 0, 26, 0.22);     /* a field's border */
-  --border-f:     rgba(192, 0, 26, 0.75);     /* a field's border while you type in it */
+  --text-input:   rgba(255, 220, 220, 0.92);
+  --label:        rgba(255, 160, 160, 0.62);
+  --label-f:      rgba(220, 50, 70, 0.95);
+  --border:       rgba(192, 0, 26, 0.22);
+  --border-f:     rgba(192, 0, 26, 0.75);
 }
 
 html,
@@ -72,19 +36,12 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
-
-/* ─────────────────────────────────────────────────────────────────────────
-   2. PAGE LAYOUT
-   Two columns: the heading on the left (56%), the form on the right (44%).
-───────────────────────────────────────────────────────────────────────── */
-
 .hero {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 56% 44%;
 }
 
-/* Left panel: its text sits at the bottom. */
 .hero-left {
   position: relative;
   overflow: hidden;
@@ -94,7 +51,6 @@ body {
   padding: 3.75rem 3.75rem 3.75rem 4rem;
 }
 
-/* Right panel: the form card, centred vertically. */
 .hero-right {
   position: relative;
   display: flex;
@@ -104,7 +60,6 @@ body {
   overflow-y: auto;
 }
 
-/* The thin line between the two panels. */
 .hero-right::before {
   content: '';
   position: absolute;
@@ -115,18 +70,11 @@ body {
   background: var(--border);
 }
 
-
-/* ─────────────────────────────────────────────────────────────────────────
-   3. LEFT PANEL TEXT
-   "System status", the two heading lines, a short line, and the body text.
-───────────────────────────────────────────────────────────────────────── */
-
 .hero-left-content {
   position: relative;
-  z-index: 3; /* above the Sith figure */
+  z-index: 3;
 }
 
-/* The short red line above "System status". */
 .hero-left-content::before {
   content: '';
   display: block;
@@ -137,7 +85,6 @@ body {
   background: var(--red);
 }
 
-/* "System status" */
 .eyebrow {
   margin-bottom: 1rem;
   font-size: 0.6rem;
@@ -148,7 +95,6 @@ body {
   text-shadow: 0 0 12px rgba(255, 0, 30, 0.5);
 }
 
-/* The two heading lines. Each letter is its own <span class="char">, so it can be animated. */
 .line {
   display: flex;
   flex-wrap: wrap;
@@ -159,12 +105,11 @@ body {
   margin-top: 0.08em;
 }
 
-/* One letter of the first line, "System Online". */
 .char {
   display: inline-block;
-  white-space: pre; /* keeps a letter that is just a space from shrinking to nothing */
+  white-space: pre;
   font-family: 'Cormorant Garamond', Georgia, serif;
-  font-size: clamp(2.6rem, 4.5vw, 4.25rem); /* grows with the window, between 2.6rem and 4.25rem */
+  font-size: clamp(2.6rem, 4.5vw, 4.25rem);
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.01em;
@@ -172,7 +117,6 @@ body {
   text-shadow: 0 0 40px rgba(220, 0, 20, 0.55), 0 0 90px rgba(180, 0, 10, 0.3);
 }
 
-/* One letter of the second line, "Ready for input": lighter, italic and smaller. */
 #line2 .char {
   font-size: clamp(2rem, 3.5vw, 3.25rem);
   font-weight: 400;
@@ -181,7 +125,6 @@ body {
   text-shadow: 0 0 40px rgba(200, 0, 15, 0.4), 0 0 80px rgba(150, 0, 10, 0.2);
 }
 
-/* The short red line under the heading. */
 .hero-divider {
   display: flex;
   align-items: center;
@@ -198,19 +141,13 @@ body {
 }
 
 .hero-body-text {
-  max-width: 38ch; /* about 38 characters per line */
+  max-width: 38ch;
   font-size: 0.9375rem;
   font-weight: 300;
   line-height: 1.72;
   letter-spacing: 0.015em;
   color: rgba(255, 210, 210, 0.72);
 }
-
-
-/* ─────────────────────────────────────────────────────────────────────────
-   4. FORM CARD
-   The box with "Release notes", the title, the description and the form.
-───────────────────────────────────────────────────────────────────────── */
 
 .form-card {
   position: relative;
@@ -221,7 +158,6 @@ body {
   background: var(--bg-card);
 }
 
-/* The red line along the top of the card. */
 .form-card::before {
   content: '';
   position: absolute;
@@ -232,7 +168,6 @@ body {
   background: var(--red);
 }
 
-/* "Release notes" */
 .form-tag {
   display: block;
   margin-bottom: 0.55rem;
@@ -244,7 +179,6 @@ body {
   text-shadow: 0 0 10px rgba(220, 0, 30, 0.5);
 }
 
-/* "Create a release page" */
 .form-title {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-size: 1.9rem;
@@ -255,7 +189,6 @@ body {
   text-shadow: 0 0 30px rgba(200, 0, 20, 0.25);
 }
 
-/* The description under the title. */
 .form-sub {
   margin-top: 0.3rem;
   font-size: 0.8rem;
@@ -265,24 +198,16 @@ body {
   color: rgba(255, 190, 190, 0.62);
 }
 
-/* The line between the description and the fields. */
 .form-rule {
   height: 1px;
   margin: 1.4rem 0 1.65rem;
   background: rgba(192, 0, 26, 0.18);
 }
 
-
-/* ─────────────────────────────────────────────────────────────────────────
-   5. FORM FIELDS
-   Two columns of fields. Each label sits inside its empty field, and moves
-   up onto the border once the field has a value or you click into it.
-───────────────────────────────────────────────────────────────────────── */
-
 .form-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  row-gap: 0;          /* the fields' own bottom margin spaces the rows */
+  row-gap: 0;
   column-gap: 1.25rem;
 }
 
@@ -291,12 +216,10 @@ body {
   margin-bottom: 1.4rem;
 }
 
-/* A field that spans both columns, e.g. App. */
 .field.full-width {
   grid-column: 1 / -1;
 }
 
-/* The label, inside the empty field. */
 label {
   position: absolute;
   top: 0.72rem;
@@ -308,7 +231,7 @@ label {
   white-space: nowrap;
   color: var(--label);
   background: transparent;
-  pointer-events: none; /* clicks go through to the input */
+  pointer-events: none;
   transition:
     top 0.18s cubic-bezier(0.22, 1, 0.36, 1),
     font-size 0.18s cubic-bezier(0.22, 1, 0.36, 1),
@@ -316,7 +239,6 @@ label {
     font-weight 0.18s ease;
 }
 
-/* The label, moved up onto the border: when you're typing in the field, or it has a value. */
 .field:focus-within label,
 .field.filled label {
   top: -0.52rem;
@@ -324,10 +246,9 @@ label {
   font-weight: 600;
   letter-spacing: 0.05em;
   color: var(--label-f);
-  background: var(--bg-card); /* hides the border line behind the label */
+  background: var(--bg-card);
 }
 
-/* Text inputs and dropdowns. */
 select,
 input[type="text"] {
   width: 100%;
@@ -340,7 +261,7 @@ input[type="text"] {
   font-weight: 400;
   color: var(--text-input);
   background: var(--bg-input);
-  appearance: none; /* no browser-specific look */
+  appearance: none;
   -webkit-appearance: none;
   transition:
     border-color 0.18s ease,
@@ -348,12 +269,10 @@ input[type="text"] {
     background 0.18s ease;
 }
 
-/* No placeholder text: the label does that job. */
 input::placeholder {
   color: transparent;
 }
 
-/* Dropdowns: a small arrow on the right (an SVG image), and room for the label above the value. */
 select {
   height: 2.85rem;
   padding-top: 1.15rem;
@@ -365,7 +284,6 @@ select {
   cursor: pointer;
 }
 
-/* A dropdown always shows a value, so its label always sits on the border. */
 .field:has(select) label {
   top: -0.52rem;
   font-size: 0.635rem;
@@ -385,7 +303,6 @@ select:disabled {
   cursor: not-allowed;
 }
 
-/* While you type in a field: a stronger border and a soft red ring. */
 select:focus,
 input[type="text"]:focus {
   border-color: var(--border-f);
@@ -393,13 +310,6 @@ input[type="text"]:focus {
   box-shadow: 0 0 0 3px rgba(192, 0, 26, 0.12), 0 0 16px rgba(192, 0, 26, 0.08);
 }
 
-
-/* ─────────────────────────────────────────────────────────────────────────
-   6. FIELD STATES
-   form.js adds .has-error (with a message) or .is-valid (with a green check) to a field.
-───────────────────────────────────────────────────────────────────────── */
-
-/* The error message under a field. A long one wraps onto more lines and pushes the next field down. */
 .err-msg {
   display: block;
   margin-top: 0.3rem;
@@ -407,7 +317,7 @@ input[type="text"]:focus {
   font-weight: 400;
   line-height: 1.4;
   color: var(--err-label);
-  overflow-wrap: anywhere; /* long words like addresses can break anywhere */
+  overflow-wrap: anywhere;
   opacity: 0;
   transform: translateY(-3px);
   pointer-events: none;
@@ -416,12 +326,10 @@ input[type="text"]:focus {
     transform 0.16s ease;
 }
 
-/* No message: no empty space either. */
 .err-msg:empty {
   display: none;
 }
 
-/* A field with an error: the message shows, and the label and border turn red. */
 .field.has-error .err-msg {
   opacity: 1;
   transform: translateY(0);
@@ -438,7 +346,6 @@ input[type="text"]:focus {
   box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.08);
 }
 
-/* A valid field: a green circle with a white check on the right (an SVG image). */
 .field.is-valid::after {
   content: '';
   position: absolute;
@@ -449,11 +356,10 @@ input[type="text"]:focus {
   height: 16px;
   border-radius: 50%;
   background: var(--ok) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6l2.5 2.5 4.5-5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center;
-  transform: translateY(-50%); /* centred vertically */
+  transform: translateY(-50%);
   pointer-events: none;
 }
 
-/* Fields marked .no-badge (e.g. Date) show their state differently, so no check. */
 .field.is-valid.no-badge::after {
   display: none;
 }
@@ -464,22 +370,16 @@ input[type="text"]:focus {
   background: rgba(192, 0, 26, 0.08);
 }
 
-
-/* ─────────────────────────────────────────────────────────────────────────
-   7. DATE FIELD AND CALENDAR
-───────────────────────────────────────────────────────────────────────── */
-
 .date-wrap {
   position: relative;
 }
 
 .date-wrap input[type="text"] {
-  padding-right: 2.6rem;        /* room for the calendar button */
+  padding-right: 2.6rem;
   letter-spacing: 0.06em;
-  font-variant-numeric: tabular-nums; /* all digits the same width */
+  font-variant-numeric: tabular-nums;
 }
 
-/* "YYYY-MM-DD" next to the label. */
 .date-fmt {
   margin-left: 0.35rem;
   font-size: 0.57rem;
@@ -488,7 +388,6 @@ input[type="text"]:focus {
   color: rgba(192, 0, 26, 0.45);
 }
 
-/* The calendar button inside the date field. */
 .date-btn {
   position: absolute;
   top: 50%;
@@ -504,7 +403,7 @@ input[type="text"]:focus {
   border-radius: 4px;
   color: rgba(192, 0, 26, 0.6);
   background: none;
-  transform: translateY(-50%); /* centred vertically */
+  transform: translateY(-50%);
   cursor: pointer;
   transition:
     color 0.15s ease,
@@ -523,7 +422,6 @@ input[type="text"]:focus {
   pointer-events: none;
 }
 
-/* The calendar icon turns green or red with the field. */
 .field.is-valid .date-btn {
   color: rgba(34, 197, 94, 0.85);
 }
@@ -532,12 +430,11 @@ input[type="text"]:focus {
   color: rgba(255, 50, 50, 0.85);
 }
 
-/* The calendar that opens under the date field. */
 .cal-pop {
   position: absolute;
   top: calc(100% + 6px);
   left: 0;
-  z-index: 999; /* above everything else on the form */
+  z-index: 999;
   width: 256px;
   padding: 10px;
   border: 1px solid rgba(192, 0, 26, 0.35);
@@ -550,7 +447,6 @@ input[type="text"]:focus {
   display: none;
 }
 
-/* Calendar header: ‹  October 2026  › */
 .cal-hdr {
   display: flex;
   align-items: center;
@@ -558,7 +454,6 @@ input[type="text"]:focus {
   margin-bottom: 8px;
 }
 
-/* The ‹ and › buttons. */
 .cal-nav {
   display: flex;
   align-items: center;
@@ -583,7 +478,6 @@ input[type="text"]:focus {
   background: rgba(192, 0, 26, 0.1);
 }
 
-/* The month name. Clicking it goes back to this month. */
 .cal-lbl {
   padding: 3px 6px;
   border: none;
@@ -602,7 +496,6 @@ input[type="text"]:focus {
   background: rgba(192, 0, 26, 0.1);
 }
 
-/* Mo Tu We Th Fr Sa Su */
 .cal-wdays {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -618,19 +511,17 @@ input[type="text"]:focus {
   color: rgba(192, 0, 26, 0.6);
 }
 
-/* The days: 7 columns. */
 .cal-days {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 1px;
 }
 
-/* One day. */
 .cal-day {
   display: flex;
   align-items: center;
   justify-content: center;
-  aspect-ratio: 1; /* square */
+  aspect-ratio: 1;
   border: none;
   border-radius: 4px;
   font-family: 'DM Sans', sans-serif;
@@ -648,7 +539,6 @@ input[type="text"]:focus {
   background: rgba(192, 0, 26, 0.18);
 }
 
-/* A day from the month before or after. */
 .cal-day.dim {
   color: rgba(255, 180, 180, 0.22);
 }
@@ -659,7 +549,6 @@ input[type="text"]:focus {
   color: #FF6666;
 }
 
-/* The picked day. */
 .cal-day.sel {
   font-weight: 600;
   color: var(--white);
@@ -671,7 +560,6 @@ input[type="text"]:focus {
   background: var(--red-hot);
 }
 
-/* Calendar footer with the "Today" button. */
 .cal-foot {
   display: flex;
   justify-content: center;
@@ -700,16 +588,8 @@ input[type="text"]:focus {
   background: rgba(192, 0, 26, 0.12);
 }
 
-
-/* ─────────────────────────────────────────────────────────────────────────
-   8. TOKEN STATUS LINE
-   ● Confluence token found in .env · Authenticated as …
-   The dot is green when the token works, red when it's missing or rejected, grey while checking.
-   Two columns: the dot, then the text with the "Check again" button under it.
-───────────────────────────────────────────────────────────────────────── */
-
 .token-status {
-  grid-column: 1 / -1; /* spans both form columns */
+  grid-column: 1 / -1;
   display: grid;
   grid-template-columns: auto 1fr;
   column-gap: 0.5rem;
@@ -719,18 +599,17 @@ input[type="text"]:focus {
   font-size: 0.8rem;
   line-height: 1.45;
   color: var(--text-input);
-  overflow-wrap: anywhere; /* long paths can break anywhere */
+  overflow-wrap: anywhere;
 }
 
 .token-status-dot {
   width: 8px;
   height: 8px;
-  margin-top: 0.4em; /* lines the dot up with the first line of text */
+  margin-top: 0.4em;
   border-radius: 50%;
   background: var(--ok);
 }
 
-/* The text and the button both go in the second column. */
 .token-status-text,
 .token-status-btn {
   grid-column: 2;
@@ -749,7 +628,6 @@ input[type="text"]:focus {
   background: #666666;
 }
 
-/* "Check again": looks like a link. */
 .token-status-btn {
   padding: 0;
   border: none;
@@ -768,11 +646,6 @@ input[type="text"]:focus {
   display: none;
 }
 
-
-/* ─────────────────────────────────────────────────────────────────────────
-   9. CREATE PAGE BUTTON AND RESULT MESSAGE
-───────────────────────────────────────────────────────────────────────── */
-
 .submit-row {
   display: flex;
   flex-wrap: wrap;
@@ -784,7 +657,7 @@ input[type="text"]:focus {
 }
 
 .btn-submit {
-  position: relative; /* the spinner is placed inside it */
+  position: relative;
   overflow: hidden;
   flex-shrink: 0;
   padding: 0.8125rem 2.1rem;
@@ -806,23 +679,19 @@ input[type="text"]:focus {
   background: var(--red-hot);
 }
 
-/* Pressed: shrinks a little. */
 .btn-submit:active {
   transform: scale(0.975);
 }
 
-/* While the page is being created. Comes after :hover, so it stays grey on hover. */
 .btn-submit:disabled {
   background: #666666;
   cursor: not-allowed;
 }
 
-/* Room for the spinner while loading. */
 .btn-submit.loading {
   padding-right: 2.6rem;
 }
 
-/* "Release page created with 3 PRs — open in Confluence", or an error. */
 .status-msg {
   min-height: 1rem;
   font-size: 0.8rem;
@@ -846,12 +715,6 @@ input[type="text"]:focus {
   text-decoration: underline;
 }
 
-
-/* ─────────────────────────────────────────────────────────────────────────
-   10. SMALL SCREENS
-───────────────────────────────────────────────────────────────────────── */
-
-/* Tablets and phones: the two panels stack, the heading on top of the form. */
 @media (max-width: 820px) {
   .hero {
     grid-template-columns: 1fr;
@@ -868,38 +731,19 @@ input[type="text"]:focus {
   }
 
   .hero-right::before {
-    display: none; /* no line between panels that are stacked */
+    display: none;
   }
 }
 
-/* Phones: one field per row. */
 @media (max-width: 640px) {
   .form-grid {
     grid-template-columns: 1fr;
   }
 }
 
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   PART 2 — ADVANCED: ANIMATIONS AND EFFECTS
-
-   How these work:
-   - @keyframes name { from {...} to {...} } describes an animation: how styles change over time.
-   - "animation: name 2s ease forwards" plays it: for 2 seconds, easing in and out,
-     and "forwards" keeps the end state when it's done. "infinite" repeats it forever.
-   - Many elements start hidden (opacity: 0). effects.js adds a class like .visible
-     at the right moment, and a "transition" fades them in.
-═══════════════════════════════════════════════════════════════════════════ */
-
-/* ─────────────────────────────────────────────────────────────────────────
-   11. HYPERSPEED INTRO
-   A black layer over the whole page with a canvas that effects.js draws the stars on.
-   When the intro is done, effects.js adds .fading and the layer fades out.
-───────────────────────────────────────────────────────────────────────── */
-
 #intro {
   position: fixed;
-  inset: 0; /* covers the whole window */
+  inset: 0;
   z-index: 9999;
   background: #000000;
   pointer-events: none;
@@ -916,13 +760,6 @@ input[type="text"]:focus {
   transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-
-/* ─────────────────────────────────────────────────────────────────────────
-   12. LEFT PANEL REVEAL
-   After the intro, effects.js shows the left panel's parts one after another.
-───────────────────────────────────────────────────────────────────────── */
-
-/* The short red line: fades in when the text block gets .revealed. */
 .hero-left-content::before {
   opacity: 0;
   transition: opacity 0.6s ease 0.1s;
@@ -932,7 +769,6 @@ input[type="text"]:focus {
   opacity: 1;
 }
 
-/* "System status", the divider and the body text: fade in when they get .visible. */
 .eyebrow,
 .hero-divider {
   opacity: 0;
@@ -944,7 +780,6 @@ input[type="text"]:focus {
   opacity: 1;
 }
 
-/* The body text also moves up a little while it fades in. */
 .hero-body {
   opacity: 0;
   transform: translateY(8px);
@@ -958,13 +793,9 @@ input[type="text"]:focus {
   transform: translateY(0);
 }
 
-/* The heading letters. Each letter goes through three steps (effects.js sets the class):
-     .rising  — rises up from below, fading in, still shifted to the right
-     .sliding — slides left into its place
-     .done    — in place */
 :root {
-  --rise-start: 65px;   /* how far below its place a letter starts */
-  --slide-start: 48px;  /* how far right of its place a letter starts */
+  --rise-start: 65px;
+  --slide-start: 48px;
   --rise-time: 580ms;
   --slide-time: 460ms;
 }
@@ -972,7 +803,7 @@ input[type="text"]:focus {
 .char {
   opacity: 0;
   transform: translateY(var(--rise-start)) translateX(var(--slide-start));
-  will-change: transform, opacity; /* tells the browser these will animate, so it's smoother */
+  will-change: transform, opacity;
 }
 
 .char.rising {
@@ -1010,16 +841,6 @@ input[type="text"]:focus {
   }
 }
 
-
-/* ─────────────────────────────────────────────────────────────────────────
-   13. SITH FIGURE
-   An SVG avatar in the left panel. Over 8 seconds it turns into a hooded Sith:
-   colours darken, a hood and tattoos appear, the eyes turn yellow and glow.
-   effects.js adds the lightsaber and the lightning on top.
-   All its class names start with "sx-" so they can't clash with the rest of the page.
-───────────────────────────────────────────────────────────────────────── */
-
-/* Position: centred in the left panel, a little above the middle. Fades in on .visible. */
 .sith-wrap {
   position: absolute;
   top: 50%;
@@ -1043,8 +864,6 @@ input[type="text"]:focus {
   height: auto;
 }
 
-/* Which part of the figure plays which animation. Most run once for 8 seconds;
-   the "loop" ones start after 8 seconds (the second time value) and repeat forever. */
 .sx-svg   { animation: sx-shadowGrow   8s forwards; }
 .sx-bg    { animation: sx-bgTransform  8s forwards ease-in-out; }
 .sx-skin  { animation: sx-skinFade     8s forwards ease-in-out; }
@@ -1059,43 +878,32 @@ input[type="text"]:focus {
 .sx-flash { animation: sx-flashIn      8s forwards; pointer-events: none; }
 .sx-amb   { animation: sx-glowIn       8s forwards; }
 .sx-aura  { animation: sx-auraIn       8s forwards, sx-auraLoop 4s 8s infinite; }
-.sx-sbo   { animation: sx-saberPulse   1.8s 8s infinite; }  /* lightsaber glow */
-.sx-sbc   { animation: sx-corePulse    2.3s 8s infinite; }  /* lightsaber core */
-#sx-root  { animation: sx-float        4s 8.2s ease-in-out infinite; display: block; }  /* gentle floating */
+.sx-sbo   { animation: sx-saberPulse   1.8s 8s infinite; }
+.sx-sbc   { animation: sx-corePulse    2.3s 8s infinite; }
+#sx-root  { animation: sx-float        4s 8.2s ease-in-out infinite; display: block; }
 
-/* The animations. The percentages are points in time: 60% of 8 seconds is 4.8 seconds. */
+@keyframes sx-bgTransform  { 0%, 60% { fill: #FF5630; } 100% { fill: #1A0000; } }
+@keyframes sx-skinFade     { 0%, 60% { fill: #FFE2D9; } 100% { fill: #1E0E0E; } }
+@keyframes sx-hairFade     { 0%, 55% { fill: #FFAB00; } 100% { fill: #110404; } }
+@keyframes sx-eyeXform     { 0%, 55% { fill: #344563; } 85% { fill: #FFCC00; } 100% { fill: #FFAA00; } }
+@keyframes sx-mouthFade    { 0%, 60% { fill: #DE350B; } 100% { fill: #440000; } }
 
-/* Colours: each part keeps its colour until a point, then darkens. */
-@keyframes sx-bgTransform  { 0%, 60% { fill: #FF5630; } 100% { fill: #1A0000; } }   /* orange circle → near black */
-@keyframes sx-skinFade     { 0%, 60% { fill: #FFE2D9; } 100% { fill: #1E0E0E; } }   /* skin → dark */
-@keyframes sx-hairFade     { 0%, 55% { fill: #FFAB00; } 100% { fill: #110404; } }   /* yellow hair → dark */
-@keyframes sx-eyeXform     { 0%, 55% { fill: #344563; } 85% { fill: #FFCC00; } 100% { fill: #FFAA00; } }  /* blue eyes → yellow */
-@keyframes sx-mouthFade    { 0%, 60% { fill: #DE350B; } 100% { fill: #440000; } }   /* red mouth → dark red */
-
-/* Layers that appear: invisible until a point, then fade in. */
-@keyframes sx-darkOverlay  { 0%, 40% { opacity: 0; } 100% { opacity: 0.82; } }      /* dark shadow over the face */
+@keyframes sx-darkOverlay  { 0%, 40% { opacity: 0; } 100% { opacity: 0.82; } }
 @keyframes sx-hoodAppear   { 0%, 50% { opacity: 0; } 100% { opacity: 1; } }
 @keyframes sx-tattooAppear { 0%, 65% { opacity: 0; } 100% { opacity: 0.75; } }
 @keyframes sx-eyePupil     { 0%, 65% { opacity: 0; } 100% { opacity: 1; } }
 @keyframes sx-eyeGlowIn    { 0%, 65% { opacity: 0; } 80% { opacity: 0.9; } 90% { opacity: 0.5; } 100% { opacity: 0.8; } }
-@keyframes sx-glowIn       { 0%, 55% { opacity: 0; } 100% { opacity: 0.2; } }       /* red glow at the bottom */
-@keyframes sx-auraIn       { 0%, 60% { opacity: 0; } 100% { opacity: 1; } }         /* red ring around the figure */
-@keyframes sx-flashIn      { 0%, 58% { opacity: 0; } 62% { opacity: 0.7; } 66%, 100% { opacity: 0; } }  /* a quick white flash */
+@keyframes sx-glowIn       { 0%, 55% { opacity: 0; } 100% { opacity: 0.2; } }
+@keyframes sx-auraIn       { 0%, 60% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes sx-flashIn      { 0%, 58% { opacity: 0; } 62% { opacity: 0.7; } 66%, 100% { opacity: 0; } }
 @keyframes sx-shadowGrow   { 0%, 55% { filter: none; } 100% { filter: drop-shadow(0 0 18px rgba(180, 0, 0, 0.7)) drop-shadow(0 0 36px rgba(100, 0, 0, 0.4)); } }
 
-/* Loops, once the change is done. */
 @keyframes sx-eyePulseLoop { 0%, 100% { opacity: 0.75; } 50% { opacity: 0.3; } }
 @keyframes sx-auraLoop     { 0%, 100% { stroke-width: 2; opacity: 0.2; } 50% { stroke-width: 1; opacity: 0.06; } }
 @keyframes sx-saberPulse   { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.65; } }
-@keyframes sx-corePulse    { 0%, 100% { opacity: 1; } 92% { opacity: 0.85; } 96% { opacity: 1; } }  /* a tiny flicker */
+@keyframes sx-corePulse    { 0%, 100% { opacity: 1; } 92% { opacity: 0.85; } 96% { opacity: 1; } }
 @keyframes sx-float        { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
 
-
-/* ─────────────────────────────────────────────────────────────────────────
-   14. SMALL ANIMATIONS
-───────────────────────────────────────────────────────────────────────── */
-
-/* The form card fades in and moves up a little when the page loads. */
 .form-card {
   opacity: 0;
   transform: translateY(14px);
@@ -1109,7 +917,6 @@ input[type="text"]:focus {
   }
 }
 
-/* The calendar drops in when it opens. */
 .cal-pop {
   animation: calDrop 0.18s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -1125,7 +932,6 @@ input[type="text"]:focus {
   }
 }
 
-/* The token line shakes when "Create page" is clicked without a working token. */
 .token-status.shake {
   animation: shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
 }
@@ -1140,7 +946,6 @@ input[type="text"]:focus {
   90%      { transform: translateX(1px); }
 }
 
-/* The spinning circle in the "Create page" button while the page is being created. */
 .btn-spinner {
   display: none;
   position: absolute;
@@ -1149,7 +954,7 @@ input[type="text"]:focus {
   width: 13px;
   height: 13px;
   border: 1.5px solid rgba(255, 255, 255, 0.3);
-  border-top-color: var(--white); /* one bright edge, so you can see it turn */
+  border-top-color: var(--white);
   border-radius: 50%;
   transform: translateY(-50%);
   animation: spin 0.65s linear infinite;

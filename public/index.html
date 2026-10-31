@@ -13,12 +13,8 @@
 
 <main class="hero">
 
-  <!-- ═══════════════════════════════════════════════════════════════════════
-       LEFT — Sith + heading
-  ═══════════════════════════════════════════════════════════════════════════ -->
   <div class="hero-left">
 
-    <!-- Sith figure -->
     <div class="sith-wrap" id="sithFigure" aria-hidden="true">
       <svg id="sx-root" class="sx-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" style="width:100%;height:auto;display:block;">
         <defs>
@@ -29,7 +25,6 @@
           <linearGradient id="sx-cl" x1="0%" y1="0%" x2="60%" y2="100%"><stop offset="0%"   stop-color="#1c0808"/><stop offset="100%" stop-color="#060202"/></linearGradient>
           <linearGradient id="sx-hl" x1="0%" y1="0%" x2="40%" y2="100%"><stop offset="0%"   stop-color="#1a0606"/><stop offset="100%" stop-color="#060101"/></linearGradient>
         </defs>
-        <!-- original avatar -->
         <path class="sx-bg"   d="M60 120C27 120 0 93 0 60S27 0 60 0s60 27 60 60-27 60-60 60z"/>
         <path class="sx-hair" d="M102.5 66c.5-3.5-1.5-7-4.5-9-1.5-1-2.5-3-1.5-4.5s1-3.5.5-5.5c-.5-3-3.5-5.5-7-6-4.5-12-16.5-20.5-30-20.5S35 29 30.5 41C27 41 24 43.5 23 47c-.5 2-.5 3.5.5 5.5.5 2 .5 3.5-1.5 4.5-3 2-5.5 5.5-5 9 .5 4 3 7 6.5 8.5v13c0 2 1.5 4 4 4h63c2.5 0 4.5-1.5 4-4V75c4.5-1 8-4 8-9z"/>
         <path class="sx-skin" d="M60 103c-16 0-29.5-13-29.5-29.5v-26H89V74c.5 16-13 29-29 29z"/>
@@ -38,7 +33,6 @@
         <circle class="sx-eye"  cx="70.5" cy="72.5" r="3.5"/>
         <path   class="sx-eye"  d="M60 96c5.5 0 9.5-3.5 11.5-8.5.5-2-.5-4-3-4h-17c-2.5 0-3.5 2-3 4 2 5 6 8.5 11.5 8.5z"/>
         <path   class="sx-mouth" d="M60 90c-3 0-5 2-6.5 4 2 1.5 4 2 6.5 2s4.5-.5 6.5-2c-1-2-3.5-4-6.5-4z"/>
-        <!-- transformation layers -->
         <path class="sx-dark" d="M60 120C27 120 0 93 0 60S27 0 60 0s60 27 60 60-27 60-60 60z" fill="#000" opacity="0"/>
         <ellipse class="sx-amb" cx="60" cy="118" rx="50" ry="5" fill="#cc0000" opacity="0" filter="url(#sx-sb)"/>
         <circle  class="sx-aura" cx="60" cy="60" r="65" fill="none" stroke="#cc0000" stroke-width="2" opacity="0" filter="url(#sx-gr)"/>
@@ -83,11 +77,9 @@
           <ellipse cx="48"   cy="72.5" rx="5.5" ry="4"   fill="none" stroke="#ffaa00" stroke-width="1.2"/>
           <ellipse cx="70.5" cy="72.5" rx="5.5" ry="4"   fill="none" stroke="#ffaa00" stroke-width="1.2"/>
         </g>
-        <!-- saber -->
         <rect class="sx-sbo" id="sx-so" x="93.5" y="88" width="4.5" height="0" rx="2"   fill="#ff0000" opacity="0" filter="url(#sx-sf)"/>
         <rect class="sx-sbo" id="sx-sm" x="94"   y="88" width="3.5" height="0" rx="1.5" fill="#ff3333" opacity="0" filter="url(#sx-sf)"/>
         <rect class="sx-sbc" id="sx-sc" x="94.8" y="88" width="2"   height="0" rx="1"   fill="#ffffff" opacity="0"/>
-        <!-- lightning -->
         <g id="sx-b1" opacity="0" filter="url(#sx-gr)">
           <polyline points="18,85 10,76 5,79 -2,68 -8,71 -14,61" stroke="#cc00ff" stroke-width="1.2" fill="none" stroke-linecap="round"/>
           <polyline points="18,85 12,74 7,77 2,66"                stroke="#ee88ff" stroke-width="0.7" fill="none" stroke-linecap="round"/>
@@ -101,7 +93,6 @@
       </svg>
     </div>
 
-    <!-- Left text content -->
     <div class="hero-left-content" id="textReveal">
       <p class="eyebrow" id="eyebrow">System status</p>
       <div class="line" id="line1"></div>
@@ -113,9 +104,6 @@
     </div>
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════════════════════
-       RIGHT — Form
-  ═══════════════════════════════════════════════════════════════════════════ -->
   <div class="hero-right">
     <div class="form-card">
       <span class="form-tag">Release notes</span>
@@ -126,27 +114,23 @@
       <form id="mainForm" novalidate>
         <div class="form-grid">
 
-          <!-- TOKEN — the server reads it from server/.env; the page only shows the status -->
           <div class="token-status checking" id="token-status" role="status" aria-live="polite">
             <span class="token-status-dot" aria-hidden="true"></span>
             <span class="token-status-text" id="token-status-text">Checking the Confluence token…</span>
             <button type="button" class="token-status-btn" id="token-recheck" hidden>Check again</button>
           </div>
 
-          <!-- APP — top-level folder in the monorepo -->
           <div class="field full-width" id="f-app">
             <label for="app">App</label>
             <select id="app" name="app"><option value="">Loading apps…</option></select>
             <span class="err-msg" id="e-app"></span>
           </div>
 
-          <!-- VERSION -->
           <div class="field" id="f-version">
             <label for="version">Version</label>
             <input type="text" id="version" name="version" maxlength="50" autocomplete="off" spellcheck="false"/>
             <span class="err-msg" id="e-version"></span>
           </div>
-          <!-- DATE — custom calendar, no-badge (icon already turns green) -->
           <div class="field no-badge" id="f-eventdate">
             <label for="eventdate">Date <span class="date-fmt">YYYY-MM-DD</span></label>
             <div class="date-wrap">
@@ -168,7 +152,6 @@
             <span class="err-msg" id="e-eventdate"></span>
           </div>
 
-          <!-- TAGS — the server reads the merged PRs between them -->
           <div class="field" id="f-tagfrom">
             <label for="tagfrom">From tag (OLD)</label>
             <select id="tagfrom" name="tagfrom" disabled><option value="">Select an app first</option></select>
@@ -180,7 +163,7 @@
             <span class="err-msg" id="e-tagto"></span>
           </div>
 
-        </div><!-- /form-grid -->
+        </div>
 
         <div class="submit-row">
           <button type="submit" class="btn-submit" id="submitBtn">Create page<span class="btn-spinner"></span></button>

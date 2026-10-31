@@ -1,14 +1,5 @@
 'use strict';
-// The page's animations, in the order they play:
-//   1. Hyperspeed intro — stars rush out from the centre, then the overlay fades away
-//   2. Heading — letters rise in one by one, then slide into place; the text below fades in
-//   3. Sith figure — transforms (CSS), grows a lightsaber, then flashes lightning forever
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   1. HYPERSPEED INTRO
-   Speeds up (accel), holds, flashes red, slows down (decel), then fades out
-   and fires the "intro-done" event.
-═══════════════════════════════════════════════════════════════════════════ */
 (function hyperspeedIntro() {
   const overlay = document.getElementById('intro');
   const canvas = document.getElementById('introCanvas');
@@ -16,7 +7,7 @@
 
   const STAR_COUNT = 380;
   const MAX_SPEED = 38;
-  const ACCEL_RATE = 1.062;          // speed is multiplied by this every frame while speeding up
+  const ACCEL_RATE = 1.062;
   const ACCEL_MS = 1400, HOLD_MS = 300, DECEL_MS = 420, FADE_MS = 750;
   const COLORS = ['#ffffff', '#ffffff', '#ffcccc', '#FF4444', '#CC0011', '#FF1A2E', '#FF6633', '#AA0008'];
 
@@ -36,7 +27,6 @@
 
   const random = (min, max) => min + Math.random() * (max - min);
 
-  // A star moving straight out from the centre. New stars start near the centre.
   function makeStar(nearCenter) {
     const angle = Math.random() * Math.PI * 2;
     const distance = nearCenter ? Math.random() * 6 : Math.random() * Math.min(width, height) * 0.5;
@@ -55,7 +45,6 @@
   resize();
   const stars = Array.from({ length: STAR_COUNT }, (_, i) => makeStar(i < STAR_COUNT * 0.55));
 
-  // A red glow in the centre that grows with the speed.
   function drawGlow() {
     const strength = Math.min(1, speed / MAX_SPEED);
     if (strength < 0.05) return;
@@ -71,7 +60,6 @@
     ctx.restore();
   }
 
-  // The red flash at top speed, fading a little every frame.
   function drawFlash() {
     if (flashAlpha <= 0) return;
     ctx.save();
@@ -89,13 +77,11 @@
     star.x += Math.cos(star.angle) * star.speed;
     star.y += Math.sin(star.angle) * star.speed;
 
-    // Off screen: start again near the centre.
     if (star.x < -60 || star.x > width + 60 || star.y < -60 || star.y > height + 60) {
       Object.assign(star, makeStar(true), { speed: speed * (phase === 'decel' ? 0.15 : 0.25) });
       return;
     }
 
-    // A streak from where it was to where it is: faster = brighter and thicker.
     ctx.beginPath();
     ctx.strokeStyle = star.color;
     ctx.lineWidth = star.width * Math.max(1, star.speed / 12);
@@ -126,7 +112,6 @@
     else if (phase === 'decel') speed = Math.max(speed * 0.9, 0.5);
     flashAlpha = Math.max(0, flashAlpha - 0.04);
 
-    // A see-through black fill leaves the trails behind the stars.
     ctx.fillStyle = phase === 'decel' ? 'rgba(0,0,0,0.48)' : 'rgba(0,0,0,0.30)';
     ctx.fillRect(0, 0, width, height);
     stars.forEach(moveStar);
@@ -143,15 +128,11 @@
   window.addEventListener('resize', resize);
 })();
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   2. HEADING — starts when the intro is done
-═══════════════════════════════════════════════════════════════════════════ */
 (function heading() {
-  const RISE = { stagger: 52, duration: 580 };  // each letter starts 52 ms after the previous one
+  const RISE = { stagger: 52, duration: 580 };
   const SLIDE = { stagger: 16, duration: 460 };
-  const PAUSE = 52;                             // between rising and sliding
+  const PAUSE = 52;
 
-  // Splits the text into letters; they rise in one by one, then the line slides into place.
   function animateLine(line, text) {
     const letters = [...text].map(char => {
       const span = document.createElement('span');
@@ -170,7 +151,7 @@
       play('rising', RISE);
       setTimeout(() => {
         letters.forEach(span => { span.style.animationDelay = ''; span.classList.remove('rising'); });
-        void line.offsetWidth; // lets the slide animation start fresh
+        void line.offsetWidth;
         play('sliding', SLIDE);
         setTimeout(() => {
           letters.forEach(span => { span.style.animationDelay = ''; span.classList.replace('sliding', 'done'); });
@@ -197,13 +178,10 @@
   }, { once: true });
 })();
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   3. SITH FIGURE — the colour change is CSS; the saber and lightning are here
-═══════════════════════════════════════════════════════════════════════════ */
 (function sith() {
-  const SABER_DELAY = 5200, SABER_GROW = 1800; // ms after page load
-  const HILT_TOP = 88;                         // the blade grows up from here
-  const blades = [                             // [element, full height, opacity]: glow, middle, core
+  const SABER_DELAY = 5200, SABER_GROW = 1800;
+  const HILT_TOP = 88;
+  const blades = [
     [document.getElementById('sx-so'), 70, 0.4],
     [document.getElementById('sx-sm'), 66, 0.75],
     [document.getElementById('sx-sc'), 62, 1],
@@ -214,7 +192,7 @@
     firstFrame ??= now;
     const elapsed = now - firstFrame;
     const progress = Math.max(0, Math.min(1, (elapsed - SABER_DELAY) / SABER_GROW));
-    const eased = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress; // ease in-out
+    const eased = progress < 0.5 ? 2 * progress * progress : -1 + (4 - 2 * progress) * progress;
     for (const [blade, fullHeight, opacity] of blades) {
       const height = fullHeight * eased;
       blade.setAttribute('height', height);
@@ -225,7 +203,6 @@
   }
   requestAnimationFrame(growSaber);
 
-  // A bolt flickers on and off, then flickers again after a random wait, forever.
   function flashBolt(bolt, minWait, maxWait) {
     setTimeout(() => {
       const flicker = [[0, '1'], [80, '0.25'], [140, '1'], [200, '0.6'], [260, '1'], [340, '0']];
