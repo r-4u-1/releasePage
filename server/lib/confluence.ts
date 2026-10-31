@@ -1,6 +1,6 @@
 // Confluence's REST API: checking the token and creating a page.
-import { config, CONFLUENCE_URL, ENV_FILE } from './settings';
-import { fail, HttpError } from './helpers';
+import { config, CONFLUENCE_URL, ENV_FILE } from './settings.ts';
+import { fail, HttpError } from './helpers.ts';
 
 // The parts of Confluence's answers this server reads.
 interface ConfluenceUser {

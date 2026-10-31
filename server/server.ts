@@ -28,14 +28,14 @@
 // Every answer to the form is JSON: { ok: true, ... } or { ok: false, message: "what went wrong" }.
 
 import http from 'node:http';
-import { config, PORT, CONFLUENCE_URL } from './lib/settings';
-import { fail, textValue, HttpError } from './lib/helpers';
-import * as git from './lib/git';
-import { requireToken } from './lib/token';
-import * as confluence from './lib/confluence';
-import { releasePageContent } from './lib/release-page-content';
-import { openInBrowser } from './lib/browser';
-import * as web from './lib/web';
+import { config, PORT, CONFLUENCE_URL } from './lib/settings.ts';
+import { fail, textValue, HttpError } from './lib/helpers.ts';
+import * as git from './lib/git.ts';
+import { requireToken } from './lib/token.ts';
+import * as confluence from './lib/confluence.ts';
+import { releasePageContent } from './lib/release-page-content.ts';
+import { openInBrowser } from './lib/browser.ts';
+import * as web from './lib/web.ts';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GET /api/token

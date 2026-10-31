@@ -15,8 +15,8 @@ export interface Config {
 }
 
 // The server folder (the one with server.ts, config.json and .env).
-// This file runs from dist/lib/, two folders below it.
-export const SERVER_DIR = path.join(__dirname, '..', '..');
+// This file is in lib/, one folder below it.
+export const SERVER_DIR = path.join(import.meta.dirname, '..');
 
 // Read when the server starts, so a change to config.json needs a restart.
 export const config: Config = JSON.parse(fs.readFileSync(path.join(SERVER_DIR, 'config.json'), 'utf8'));
@@ -26,6 +26,9 @@ export const PORT = Number(process.env.PORT) || config.port;
 
 // The folder with the form page. Only the files in it can be fetched, nothing else on disk.
 export const PUBLIC_DIR = path.join(SERVER_DIR, '..', 'public');
+
+// The form's scripts, in TypeScript. The server removes their types when the page asks for them.
+export const CLIENT_DIR = path.join(SERVER_DIR, '..', 'client');
 
 // The file the Confluence token is read from. It's in server/.gitignore, so the token is never committed.
 export const ENV_FILE = path.join(SERVER_DIR, '.env');

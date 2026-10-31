@@ -40,7 +40,7 @@ You pick an app, two git tags, a version and a release date. The server:
 
 ## Setup
 
-Requirements: **Node.js 18.11 or newer** and **git**. The code is TypeScript; `npm install` in the `server` folder gets the compiler (it's only needed to build, the server itself uses Node's built-in modules).
+Requirements: **Node.js 22.18 or newer** (or 23.6+) and **git**. Nothing to install: the code is TypeScript, and Node runs it as it is by removing the types. The server only uses Node's built-in modules, so there's no `package.json` and no `node_modules`.
 
 **1. Put the tool in the monorepo.** The server lists the monorepo's top-level folders as apps:
 
@@ -70,14 +70,10 @@ CONFLUENCE_TOKEN=<your token>
 
 `server/.gitignore` already lists `.env`, so the token is never committed. See [The token](#the-token).
 
-**7. Install, then start the server** (both in the `server` folder) and open **http://localhost:3000/**.
+**7. Start the server** in the `server` folder and open **http://localhost:3000/**.
 
 ```bash
-npm install
-```
-
-```bash
-npm run release-page
+node server.ts
 ```
 
 ---
@@ -198,7 +194,7 @@ Everything is in [`server/config.json`](server/config.json).
 | `appsWithVerification` | Apps whose page gets the **isVerified** and **Note** columns and the info box. |
 | `verificationInfo` | The text in the info box. |
 
-`npm run release-page` compiles the TypeScript, then recompiles and restarts the server whenever a `.ts` file changes; `npm start` compiles once and starts it. `npm run build` only compiles. A change to `config.json` needs a restart.
+A change to `config.json` or the server's `.ts` files needs a restart; `node --watch server.ts` restarts it by itself when a server file changes. A change to `client/` or `public/` only needs a page reload.
 
 ---
 
@@ -206,14 +202,13 @@ Everything is in [`server/config.json`](server/config.json).
 
 ```
 README.md               This file
-client/                 The form's scripts, in TypeScript. Compiled to public/*.js
+client/                 The form's scripts, in TypeScript. Served as /form.js and /effects.js, types removed
 ├── form.ts             The form: field checks, apps → tags, creating the page
 ├── effects.ts          The hyperspeed intro, the heading letters and the Sith figure
-└── tsconfig.json       How they're compiled for the browser
+└── tsconfig.json       How the editor checks them
 public/                 The form, served at http://localhost:3000/
 ├── index.html          The page's markup
-├── style.css           All styles and CSS animations
-└── form.js, effects.js Compiled from client/ (gitignored)
+└── style.css           All styles and CSS animations
 server/
 ├── server.ts           What each API path does, and which path runs what
 ├── lib/                The details server.ts uses
@@ -225,9 +220,7 @@ server/
 │   ├── release-page-content.ts  The page's table and info box
 │   ├── browser.ts      Opens the new page in the browser
 │   └── web.ts          Who may call the server, reading requests, sending answers
-├── dist/               The compiled server that Node runs (gitignored)
-├── tsconfig.json       How the server is compiled
-├── package.json        npm scripts: build, start, release-page
+├── tsconfig.json       How the editor checks the server
 ├── config.json         Settings
 └── .env                Your Confluence token (you create it; gitignored)
 ```
@@ -251,8 +244,8 @@ All answers are JSON with `ok: true/false`. Errors come with a `message` and a m
 
 | You see | Try |
 |---|---|
-| **This page isn't connected to the release server** | The page was opened from somewhere else, e.g. VS Code's Live Server or straight from the file. Start the server with `npm run release-page` in the `server` folder and open **http://localhost:3000/**. |
-| **Can't reach the release server** | The server isn't running. Start it with `npm run release-page` in the `server` folder. |
+| **This page isn't connected to the release server** | The page was opened from somewhere else, e.g. VS Code's Live Server or straight from the file. Start the server with `node server.ts` in the `server` folder and open **http://localhost:3000/**. |
+| **Can't reach the release server** | The server isn't running. Start it with `node server.ts` in the `server` folder. |
 | **No Confluence token found** | Add `CONFLUENCE_TOKEN=<your token>` to `server/.env` (the message shows the exact path), then click **Check again**. |
 | **Confluence rejected the token** | The token is wrong or expired. Create a new one and replace it in `server/.env`. For Cloud, also set `confluenceEmail`. |
 | **Can't find Confluence at …** / **Can't reach Confluence at …** / **… refused the connection** | Check `confluenceBaseUrl` in `server/config.json`, and that you're on the network or VPN that can reach Confluence. |
@@ -268,5 +261,6 @@ All answers are JSON with `ok: true/false`. Errors come with a `message` and a m
 | **No app-x-&lt;n&gt;-OLD / -NEW tags found** | The app has no tags named like `app-x-12-OLD`. Fetch them with `git fetch --tags`. |
 | **This server only answers its own page** | Open the page as `http://localhost:3000/` or `http://127.0.0.1:3000/`. |
 | **Git isn't installed, or isn't on the PATH** | Install git, then restart the server. |
+| **ERR_UNKNOWN_FILE_EXTENSION ".ts"** when starting | Your Node is older than 22.18. Update Node, or start with `node --experimental-strip-types server.ts`. |
 | `EADDRINUSE` when starting | Port 3000 is in use. Stop the other program, or start with a different `PORT`. |
 | The new page doesn't open by itself | Use the **open in Confluence** link under the button. |

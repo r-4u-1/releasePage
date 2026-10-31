@@ -1,8 +1,8 @@
 // The release page's content, in Confluence's "storage format":
 // HTML plus Confluence's own <ac:...> tags for things like info boxes (macros) and column layouts.
-import { config } from './settings';
-import { escapeHtml } from './helpers';
-import type { PullRequest } from './git';
+import { config } from './settings.ts';
+import { escapeHtml } from './helpers.ts';
+import type { PullRequest } from './git.ts';
 
 export interface Release {
   app: string;

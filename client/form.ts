@@ -5,7 +5,7 @@
 const $ = <T extends HTMLElement = HTMLElement>(id: string): T => document.getElementById(id) as T;
 
 // What to do when the page can't talk to the release server.
-const START_SERVER = 'Start the server with "npm run release-page" in the server folder, then open the address it prints (http://localhost:3000/).';
+const START_SERVER = 'Start the server with "node server.ts" in the server folder, then open the address it prints (http://localhost:3000/).';
 
 // An error from api(). notConnected is set when the page can't talk to the release server at all,
 // so the fields can show a short note instead of repeating the whole message.
