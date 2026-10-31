@@ -14,15 +14,9 @@
 <main class="hero">
 
   <!-- ═══════════════════════════════════════════════════════════════════════
-       LEFT — Aurora + Sith
+       LEFT — Sith + heading
   ═══════════════════════════════════════════════════════════════════════════ -->
   <div class="hero-left">
-    <div class="aurora-stage" aria-hidden="true">
-      <div class="orb orb-1"></div><div class="orb orb-2"></div>
-      <div class="orb orb-3"></div><div class="orb orb-4"></div>
-    </div>
-    <div class="aurora-vignette" aria-hidden="true"></div>
-    <div class="aurora-grain"   aria-hidden="true"></div>
 
     <!-- Sith figure -->
     <div class="sith-wrap" id="sithFigure" aria-hidden="true">
@@ -116,11 +110,6 @@
       <div class="hero-body" id="heroBody">
         <p class="hero-body-text">All systems are operational and standing by for your next command. Personal, thoughtful service — ready when you are.</p>
       </div>
-      <div class="trust-row" id="trustRow">
-        <span class="trust-item"><span class="trust-icon"><svg viewBox="0 0 7 7" fill="none"><path d="M1 3.5l1.8 1.8 3.2-3.2" stroke="rgba(220,30,50,0.8)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Secure connection</span>
-        <span class="trust-item"><span class="trust-icon"><svg viewBox="0 0 7 7" fill="none"><path d="M1 3.5l1.8 1.8 3.2-3.2" stroke="rgba(220,30,50,0.8)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Real-time processing</span>
-        <span class="trust-item"><span class="trust-icon"><svg viewBox="0 0 7 7" fill="none"><path d="M1 3.5l1.8 1.8 3.2-3.2" stroke="rgba(220,30,50,0.8)" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg></span>24 / 7 availability</span>
-      </div>
     </div>
   </div>
 
@@ -137,21 +126,11 @@
       <form id="mainForm" novalidate>
         <div class="form-grid">
 
-          <!-- TOKEN — verify field (Confluence personal access token) -->
-          <div class="field full-width verify-field no-badge" id="f-token">
-            <label for="token">Confluence token</label>
-            <input type="password" id="token" name="token" autocomplete="new-password" spellcheck="false"/>
-            <span class="err-msg" id="e-token"></span>
-            <span class="field-hint" id="h-token"></span>
-            <span class="vf-badge" id="badge-token"><svg viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="6.5" fill="currentColor"/><path class="vf-check" d="M3.5 7l2.3 2.3 4.7-5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
-            <span class="vf-spinner" id="spinner-token"></span>
-          </div>
-
-          <!-- Shown instead of the token field when the server has a valid token in .env -->
-          <div class="token-saved" id="token-saved" hidden>
-            <span class="token-saved-dot" aria-hidden="true"></span>
-            <span id="token-saved-text">Using the token saved in .env</span>
-            <button type="button" class="token-saved-btn" id="token-change">Use a different token</button>
+          <!-- TOKEN — the server reads it from server/.env; the page only shows the status -->
+          <div class="token-status checking" id="token-status" role="status" aria-live="polite">
+            <span class="token-status-dot" aria-hidden="true"></span>
+            <span class="token-status-text" id="token-status-text">Checking the Confluence token…</span>
+            <button type="button" class="token-status-btn" id="token-recheck" hidden>Check again</button>
           </div>
 
           <!-- APP — top-level folder in the monorepo -->
@@ -213,7 +192,6 @@
 
 </main>
 
-<div class="footer-bar" aria-hidden="true"></div>
 <div id="intro" aria-hidden="true"><canvas id="introCanvas"></canvas></div>
 
 <script src="form.js"></script>

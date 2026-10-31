@@ -1,41 +1,70 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   STYLES FOR THE RELEASE FORM
+
+   Part 1 — the page itself, in the order things appear on screen:
+     1. Colours and basics
+     2. Page layout (left panel + right panel)
+     3. Left panel text
+     4. Form card
+     5. Form fields
+     6. Field states (error, valid)
+     7. Date field and calendar
+     8. Token status line
+     9. Create page button and result message
+    10. Small screens
+
+   Part 2 — advanced: animations and effects (at the bottom)
+    11. Hyperspeed intro
+    12. Left panel reveal (fade-ins and the letter-by-letter heading)
+    13. Sith figure
+    14. Small animations (form card, calendar, shake, spinner)
+═══════════════════════════════════════════════════════════════════════════ */
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PART 1 — THE PAGE
+═══════════════════════════════════════════════════════════════════════════ */
+
 /* ─────────────────────────────────────────────────────────────────────────
-   RESET & TOKENS
+   1. COLOURS AND BASICS
 ───────────────────────────────────────────────────────────────────────── */
-*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-:root {
-  --red:        #C0001A;
-  --red-mid:    #8B0011;
-  --red-hot:    #FF1A2E;
-  --red-dim:    #520010;
-  --ember:      #FF3300;
-
-  --ok:         #22c55e;
-  --ok-label:   #4ade80;
-  --err:        #FF3333;
-  --err-label:  #FF5555;
-
-  --bg-body:    #000000;
-  --bg-right:   #070003;
-  --bg-card:    #0E0007;
-  --bg-input:   #160009;
-  --bg-input-f: #1E000D;
-
-  --text-input: rgba(255,220,220,0.92);
-  --label:      rgba(255,160,160,0.62);
-  --label-f:    rgba(220,50,70,0.95);
-  --border:     rgba(192,0,26,0.22);
-  --border-f:   rgba(192,0,26,0.75);
-
-  --white: #FFFFFF;
-
-  --rise-start: 65px;
-  --slide-start: 48px;
-  --dur1: 580ms;
-  --dur2: 460ms;
+/* Every element's size includes its padding and border, and nothing gets default spacing. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-html, body {
+:root {
+  /* Reds */
+  --red:          #C0001A;  /* main red: button, lines, selected day */
+  --red-hot:      #FF1A2E;  /* brighter red: hover */
+
+  /* Status colours */
+  --ok:           #22C55E;  /* green: valid field, working token */
+  --err:          #FF3333;  /* red border of a field with an error */
+  --err-label:    #FF5555;  /* red text of an error */
+
+  /* Backgrounds, from the page to the inputs */
+  --bg-body:      #0B0004;  /* the whole page */
+  --bg-card:      #0E0007;  /* the form card */
+  --bg-input:     #160009;  /* an input */
+  --bg-input-f:   #1E000D;  /* an input while you type in it ("f" = focused) */
+
+  /* Text and borders */
+  --white:        #FFFFFF;
+  --text-input:   rgba(255, 220, 220, 0.92);  /* text you type */
+  --label:        rgba(255, 160, 160, 0.62);  /* a label inside an empty field */
+  --label-f:      rgba(220, 50, 70, 0.95);    /* a label above a filled or focused field */
+  --border:       rgba(192, 0, 26, 0.22);     /* a field's border */
+  --border-f:     rgba(192, 0, 26, 0.75);     /* a field's border while you type in it */
+}
+
+html,
+body {
   height: 100%;
   background: var(--bg-body);
   color: var(--white);
@@ -43,18 +72,19 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
+
 /* ─────────────────────────────────────────────────────────────────────────
-   LAYOUT
+   2. PAGE LAYOUT
+   Two columns: the heading on the left (56%), the form on the right (44%).
 ───────────────────────────────────────────────────────────────────────── */
+
 .hero {
   min-height: 100vh;
   display: grid;
   grid-template-columns: 56% 44%;
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   LEFT PANEL
-───────────────────────────────────────────────────────────────────────── */
+/* Left panel: its text sits at the bottom. */
 .hero-left {
   position: relative;
   overflow: hidden;
@@ -62,357 +92,1075 @@ html, body {
   flex-direction: column;
   justify-content: flex-end;
   padding: 3.75rem 3.75rem 3.75rem 4rem;
-  background: var(--bg-body);
 }
 
-/* Aurora orbs */
-.aurora-stage { position: absolute; inset: 0; z-index: 0; overflow: hidden; }
-.orb { position: absolute; border-radius: 50%; filter: blur(72px); will-change: transform; }
-.orb-1 { width:75%; height:68%; top:-20%; left:-14%;  background: radial-gradient(circle, rgba(180,0,20,0.9) 0%, transparent 70%); animation: drift1 16s ease-in-out infinite; }
-.orb-2 { width:60%; height:60%; top:-10%; right:-18%; background: radial-gradient(circle, rgba(130,0,12,0.75) 0%, transparent 70%); animation: drift2 20s ease-in-out infinite; }
-.orb-3 { width:65%; height:52%; bottom:-16%; left:14%; background: radial-gradient(circle, rgba(200,20,0,0.55) 0%, transparent 70%); animation: drift3 24s ease-in-out infinite; }
-.orb-4 { width:42%; height:42%; top:38%; right:-6%;   background: radial-gradient(circle, rgba(255,20,40,0.35) 0%, transparent 70%); animation: drift4 18s ease-in-out infinite; }
-@keyframes drift1 { 0%,100%{transform:translate(0,0) scale(1)} 33%{transform:translate(6%,9%) scale(1.06)} 66%{transform:translate(-4%,4%) scale(0.94)} }
-@keyframes drift2 { 0%,100%{transform:translate(0,0) scale(1)} 40%{transform:translate(-8%,6%) scale(1.08)} 70%{transform:translate(4%,-4%) scale(0.96)} }
-@keyframes drift3 { 0%,100%{transform:translate(0,0) scale(1)} 30%{transform:translate(5%,-7%) scale(1.05)} 65%{transform:translate(-6%,3%) scale(1.02)} }
-@keyframes drift4 { 0%,100%{transform:translate(0,0) scale(1)} 45%{transform:translate(-5%,-8%) scale(1.1)} 80%{transform:translate(3%,5%) scale(0.92)} }
+/* Right panel: the form card, centred vertically. */
+.hero-right {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 3rem 2.75rem;
+  overflow-y: auto;
+}
 
-.aurora-vignette { position:absolute; inset:0; z-index:1; background:linear-gradient(0deg,rgba(0,0,0,0.92) 0%,rgba(0,0,0,0.6) 35%,rgba(0,0,0,0.18) 60%,rgba(0,0,0,0.04) 100%); pointer-events:none; }
-.aurora-grain    { position:absolute; inset:0; z-index:2; pointer-events:none; opacity:0.45; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='250' height='250'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.72' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='250' height='250' filter='url(%23g)' opacity='0.14'/%3E%3C/svg%3E"); background-size:200px 200px; mix-blend-mode:soft-light; }
+/* The thin line between the two panels. */
+.hero-right::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 1px;
+  background: var(--border);
+}
 
-/* Sith figure */
-.sith-wrap { position:absolute; z-index:2; top:50%; left:50%; transform:translate(-50%,-58%); width:clamp(180px,34%,270px); pointer-events:none; opacity:0; transition:opacity 1.8s ease; filter:drop-shadow(0 0 40px rgba(200,0,20,0.45)) drop-shadow(0 0 80px rgba(150,0,10,0.25)); }
-.sith-wrap.visible { opacity:1; }
-.sith-wrap svg { width:100%; height:auto; display:block; }
-
-/* Left panel text */
-.hero-left-content { position:relative; z-index:3; }
-.hero-left-content::before { content:''; display:block; width:32px; height:2px; background:linear-gradient(90deg,var(--red-mid),var(--red-hot)); margin-bottom:1.1rem; opacity:0; transition:opacity 0.6s ease 0.1s; border-radius:2px; box-shadow:0 0 8px rgba(192,0,26,0.8); }
-.hero-left-content.revealed::before { opacity:1; }
-.eyebrow { font-size:0.6rem; font-weight:500; letter-spacing:0.28em; text-transform:uppercase; color:rgba(220,30,50,0.85); margin-bottom:1rem; opacity:0; transition:opacity 0.5s ease; text-shadow:0 0 12px rgba(255,0,30,0.5); }
-.eyebrow.visible { opacity:1; }
-.line { display:flex; flex-wrap:wrap; line-height:1; }
-.line + .line { margin-top:0.08em; }
-@keyframes rise  { from{transform:translateY(var(--rise-start)) translateX(var(--slide-start));opacity:0} to{transform:translateY(0) translateX(var(--slide-start));opacity:1} }
-@keyframes slide { from{transform:translateY(0) translateX(var(--slide-start))} to{transform:translateY(0) translateX(0)} }
-/* white-space:pre keeps a letter that is just a space from collapsing to zero width */
-.char { display:inline-block; white-space:pre; font-family:'Cormorant Garamond',Georgia,serif; font-weight:700; font-size:clamp(2.6rem,4.5vw,4.25rem); line-height:1; letter-spacing:-0.01em; color:#FFF; opacity:0; transform:translateY(var(--rise-start)) translateX(var(--slide-start)); will-change:transform,opacity; text-shadow:0 0 40px rgba(220,0,20,0.55),0 0 90px rgba(180,0,10,0.3); }
-#line2 .char { font-weight:400; font-style:italic; color:rgba(255,180,180,0.72); font-size:clamp(2rem,3.5vw,3.25rem); text-shadow:0 0 40px rgba(200,0,15,0.4),0 0 80px rgba(150,0,10,0.2); }
-.char.rising  { animation:rise  var(--dur1) cubic-bezier(0.22,1,0.36,1) forwards; }
-.char.sliding { opacity:1; transform:translateY(0) translateX(var(--slide-start)); animation:slide var(--dur2) cubic-bezier(0.22,1,0.36,1) forwards; }
-.char.done    { opacity:1; transform:translateY(0) translateX(0); }
-.hero-divider { display:flex; align-items:center; gap:0.75rem; margin:1.5rem 0; opacity:0; transition:opacity 0.5s ease; }
-.hero-divider.visible { opacity:1; }
-.hero-divider::before { content:''; display:block; width:40px; height:1px; background:linear-gradient(90deg,var(--red),var(--red-hot)); opacity:0.7; box-shadow:0 0 6px rgba(192,0,26,0.6); }
-.hero-body { opacity:0; transform:translateY(8px); transition:opacity 640ms ease,transform 640ms ease; }
-.hero-body.visible { opacity:1; transform:translateY(0); }
-.hero-body-text { font-size:0.9375rem; font-weight:300; line-height:1.72; color:rgba(255,210,210,0.72); max-width:38ch; letter-spacing:0.015em; }
-.trust-row { display:flex; flex-wrap:wrap; gap:0.4rem 1.75rem; margin-top:2.25rem; padding-top:1.5rem; border-top:1px solid rgba(192,0,26,0.18); opacity:0; transform:translateY(5px); transition:opacity 0.55s ease,transform 0.55s ease; }
-.trust-row.visible { opacity:1; transform:translateY(0); }
-.trust-item { display:flex; align-items:center; gap:0.5rem; font-size:0.68rem; font-weight:400; color:rgba(255,180,180,0.65); letter-spacing:0.03em; }
-.trust-icon { width:14px; height:14px; border-radius:50%; border:1px solid rgba(192,0,26,0.4); background:rgba(192,0,26,0.08); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-.trust-icon svg { width:7px; height:7px; }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   RIGHT PANEL
+   3. LEFT PANEL TEXT
+   "System status", the two heading lines, a short line, and the body text.
 ───────────────────────────────────────────────────────────────────────── */
-.hero-right { background:var(--bg-right); display:flex; flex-direction:column; justify-content:center; padding:3rem 2.75rem; position:relative; overflow-y:auto; }
-.hero-right::before { content:''; position:absolute; top:0; bottom:0; left:0; width:1px; background:linear-gradient(180deg,transparent 0%,rgba(192,0,26,0.5) 30%,rgba(255,20,40,0.4) 70%,transparent 100%); }
+
+.hero-left-content {
+  position: relative;
+  z-index: 3; /* above the Sith figure */
+}
+
+/* The short red line above "System status". */
+.hero-left-content::before {
+  content: '';
+  display: block;
+  width: 32px;
+  height: 2px;
+  margin-bottom: 1.1rem;
+  border-radius: 2px;
+  background: var(--red);
+}
+
+/* "System status" */
+.eyebrow {
+  margin-bottom: 1rem;
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(220, 30, 50, 0.85);
+  text-shadow: 0 0 12px rgba(255, 0, 30, 0.5);
+}
+
+/* The two heading lines. Each letter is its own <span class="char">, so it can be animated. */
+.line {
+  display: flex;
+  flex-wrap: wrap;
+  line-height: 1;
+}
+
+.line + .line {
+  margin-top: 0.08em;
+}
+
+/* One letter of the first line, "System Online". */
+.char {
+  display: inline-block;
+  white-space: pre; /* keeps a letter that is just a space from shrinking to nothing */
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(2.6rem, 4.5vw, 4.25rem); /* grows with the window, between 2.6rem and 4.25rem */
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  color: var(--white);
+  text-shadow: 0 0 40px rgba(220, 0, 20, 0.55), 0 0 90px rgba(180, 0, 10, 0.3);
+}
+
+/* One letter of the second line, "Ready for input": lighter, italic and smaller. */
+#line2 .char {
+  font-size: clamp(2rem, 3.5vw, 3.25rem);
+  font-weight: 400;
+  font-style: italic;
+  color: rgba(255, 180, 180, 0.72);
+  text-shadow: 0 0 40px rgba(200, 0, 15, 0.4), 0 0 80px rgba(150, 0, 10, 0.2);
+}
+
+/* The short red line under the heading. */
+.hero-divider {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.hero-divider::before {
+  content: '';
+  display: block;
+  width: 40px;
+  height: 1px;
+  background: var(--red);
+}
+
+.hero-body-text {
+  max-width: 38ch; /* about 38 characters per line */
+  font-size: 0.9375rem;
+  font-weight: 300;
+  line-height: 1.72;
+  letter-spacing: 0.015em;
+  color: rgba(255, 210, 210, 0.72);
+}
+
 
 /* ─────────────────────────────────────────────────────────────────────────
-   FORM CARD
+   4. FORM CARD
+   The box with "Release notes", the title, the description and the form.
 ───────────────────────────────────────────────────────────────────────── */
-.form-card { background:var(--bg-card); border:1px solid var(--border); border-radius:4px; padding:2.25rem 2.25rem 2rem; box-shadow:0 2px 8px rgba(0,0,0,0.4),0 12px 36px rgba(0,0,0,0.55),0 0 60px rgba(160,0,15,0.08); position:relative; overflow:hidden; opacity:0; transform:translateY(14px); animation:cardIn 0.75s cubic-bezier(0.22,1,0.36,1) 0.15s forwards; }
-@keyframes cardIn { to { opacity:1; transform:translateY(0); } }
-.form-card::before { content:''; position:absolute; top:0; left:0; right:0; height:2px; background:linear-gradient(90deg,var(--red-dim) 0%,var(--red) 40%,var(--red-hot) 70%,var(--ember) 100%); }
-.form-card::after  { content:''; position:absolute; top:-30px; right:-30px; width:160px; height:160px; background:radial-gradient(circle,rgba(192,0,26,0.18) 0%,rgba(120,0,10,0.08) 50%,transparent 70%); pointer-events:none; }
-.form-tag   { font-size:0.58rem; font-weight:600; letter-spacing:0.24em; text-transform:uppercase; color:#FF3A52; display:block; margin-bottom:0.55rem; text-shadow:0 0 10px rgba(220,0,30,0.5); }
-.form-title { font-family:'Cormorant Garamond',Georgia,serif; font-size:1.9rem; font-weight:700; color:#FFF; line-height:1.12; letter-spacing:-0.025em; text-shadow:0 0 30px rgba(200,0,20,0.25); }
-.form-sub   { font-size:0.8rem; color:rgba(255,190,190,0.62); font-weight:300; margin-top:0.3rem; line-height:1.55; letter-spacing:0.01em; }
-.form-rule  { height:1px; background:rgba(192,0,26,0.18); margin:1.4rem 0 1.65rem; }
+
+.form-card {
+  position: relative;
+  overflow: hidden;
+  padding: 2.25rem 2.25rem 2rem;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-card);
+}
+
+/* The red line along the top of the card. */
+.form-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--red);
+}
+
+/* "Release notes" */
+.form-tag {
+  display: block;
+  margin-bottom: 0.55rem;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: #FF3A52;
+  text-shadow: 0 0 10px rgba(220, 0, 30, 0.5);
+}
+
+/* "Create a release page" */
+.form-title {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: 1.9rem;
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.025em;
+  color: var(--white);
+  text-shadow: 0 0 30px rgba(200, 0, 20, 0.25);
+}
+
+/* The description under the title. */
+.form-sub {
+  margin-top: 0.3rem;
+  font-size: 0.8rem;
+  font-weight: 300;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+  color: rgba(255, 190, 190, 0.62);
+}
+
+/* The line between the description and the fields. */
+.form-rule {
+  height: 1px;
+  margin: 1.4rem 0 1.65rem;
+  background: rgba(192, 0, 26, 0.18);
+}
+
 
 /* ─────────────────────────────────────────────────────────────────────────
-   FORM GRID
+   5. FORM FIELDS
+   Two columns of fields. Each label sits inside its empty field, and moves
+   up onto the border once the field has a value or you click into it.
 ───────────────────────────────────────────────────────────────────────── */
-.form-grid { display:grid; grid-template-columns:1fr 1fr; gap:0 1.25rem; }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   BASE FIELD  (float-label, no decorative indicator by default)
-───────────────────────────────────────────────────────────────────────── */
-.field { position:relative; margin-bottom:1.4rem; }
-.field.full-width { grid-column:1 / -1; }
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  row-gap: 0;          /* the fields' own bottom margin spaces the rows */
+  column-gap: 1.25rem;
+}
 
+.field {
+  position: relative;
+  margin-bottom: 1.4rem;
+}
+
+/* A field that spans both columns, e.g. App. */
+.field.full-width {
+  grid-column: 1 / -1;
+}
+
+/* The label, inside the empty field. */
 label {
-  position:absolute; top:0.72rem; left:0.85rem;
-  font-size:0.8125rem; font-weight:400;
-  color:var(--label);
-  pointer-events:none;
-  transition: top .18s cubic-bezier(0.22,1,0.36,1),
-              font-size .18s cubic-bezier(0.22,1,0.36,1),
-              color .18s ease, font-weight .18s ease;
-  background:transparent; padding:0 0.2rem; z-index:1; white-space:nowrap;
+  position: absolute;
+  top: 0.72rem;
+  left: 0.85rem;
+  z-index: 1;
+  padding: 0 0.2rem;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  white-space: nowrap;
+  color: var(--label);
+  background: transparent;
+  pointer-events: none; /* clicks go through to the input */
+  transition:
+    top 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    font-size 0.18s cubic-bezier(0.22, 1, 0.36, 1),
+    color 0.18s ease,
+    font-weight 0.18s ease;
 }
+
+/* The label, moved up onto the border: when you're typing in the field, or it has a value. */
 .field:focus-within label,
 .field.filled label {
-  top:-0.52rem; font-size:0.635rem; font-weight:600;
-  color:var(--label-f); background:var(--bg-card); letter-spacing:0.05em;
+  top: -0.52rem;
+  font-size: 0.635rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--label-f);
+  background: var(--bg-card); /* hides the border line behind the label */
 }
 
-select, input[type="text"], input[type="password"] {
-  width:100%; background:var(--bg-input);
-  border:1px solid var(--border); border-radius:3px;
-  color:var(--text-input); font-family:'DM Sans',sans-serif;
-  font-size:0.875rem; font-weight:400;
-  padding:0.72rem 0.85rem; outline:none;
-  appearance:none; -webkit-appearance:none;
-  transition: border-color .18s ease, box-shadow .2s ease, background .18s ease;
+/* Text inputs and dropdowns. */
+select,
+input[type="text"] {
+  width: 100%;
+  padding: 0.72rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  outline: none;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--text-input);
+  background: var(--bg-input);
+  appearance: none; /* no browser-specific look */
+  -webkit-appearance: none;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.2s ease,
+    background 0.18s ease;
 }
-input::placeholder { color:transparent; }
 
+/* No placeholder text: the label does that job. */
+input::placeholder {
+  color: transparent;
+}
+
+/* Dropdowns: a small arrow on the right (an SVG image), and room for the label above the value. */
 select {
-  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(200%2C80%2C80%2C0.6)' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-  background-repeat:no-repeat; background-position:right 0.85rem center;
-  padding-right:2.25rem; padding-top:1.15rem; padding-bottom:0.3rem; cursor:pointer;
   height: 2.85rem;
+  padding-top: 1.15rem;
+  padding-right: 2.25rem;
+  padding-bottom: 0.3rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='rgba(200%2C80%2C80%2C0.6)' stroke-width='1.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.85rem center;
+  cursor: pointer;
 }
-/* always float label above a select so it never overlaps the value text */
+
+/* A dropdown always shows a value, so its label always sits on the border. */
 .field:has(select) label {
-  top:-0.52rem; font-size:0.635rem; font-weight:600;
-  color:var(--label-f); background:var(--bg-card); letter-spacing:0.05em;
-}
-select option { background:#1A0008; color:#FFD0D0; }
-select:disabled { opacity:0.5; cursor:not-allowed; }
-
-select:focus, input[type="text"]:focus, input[type="password"]:focus {
-  border-color:var(--border-f);
-  box-shadow:0 0 0 3px rgba(192,0,26,0.12),0 0 16px rgba(192,0,26,0.08);
-  background:var(--bg-input-f);
+  top: -0.52rem;
+  font-size: 0.635rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  color: var(--label-f);
+  background: var(--bg-card);
 }
 
-/* error message */
+select option {
+  color: #FFD0D0;
+  background: #1A0008;
+}
+
+select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* While you type in a field: a stronger border and a soft red ring. */
+select:focus,
+input[type="text"]:focus {
+  border-color: var(--border-f);
+  background: var(--bg-input-f);
+  box-shadow: 0 0 0 3px rgba(192, 0, 26, 0.12), 0 0 16px rgba(192, 0, 26, 0.08);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   6. FIELD STATES
+   form.js adds .has-error (with a message) or .is-valid (with a green check) to a field.
+───────────────────────────────────────────────────────────────────────── */
+
+/* The error message under a field. A long one wraps onto more lines and pushes the next field down. */
 .err-msg {
-  position:absolute; bottom:-1.1rem; left:0;
-  font-size:0.66rem; color:var(--err-label); font-weight:400;
-  opacity:0; transform:translateY(-3px);
-  transition:opacity .16s ease,transform .16s ease;
-  pointer-events:none;
+  display: block;
+  margin-top: 0.3rem;
+  font-size: 0.66rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--err-label);
+  overflow-wrap: anywhere; /* long words like addresses can break anywhere */
+  opacity: 0;
+  transform: translateY(-3px);
+  pointer-events: none;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
 }
-.field.has-error .err-msg    { opacity:1; transform:translateY(0); }
-.field.has-error label       { color:var(--err-label); }
+
+/* No message: no empty space either. */
+.err-msg:empty {
+  display: none;
+}
+
+/* A field with an error: the message shows, and the label and border turn red. */
+.field.has-error .err-msg {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.field.has-error label {
+  color: var(--err-label);
+}
+
 .field.has-error select,
-.field.has-error input       { border-color:var(--err); background:rgba(255,0,0,0.06); box-shadow:0 0 0 3px rgba(255,0,0,0.08); }
+.field.has-error input {
+  border-color: var(--err);
+  background: rgba(255, 0, 0, 0.06);
+  box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.08);
+}
 
-/* plain-valid — green check badge via ::after (simple fields only) */
+/* A valid field: a green circle with a white check on the right (an SVG image). */
 .field.is-valid::after {
-  content:'';
-  position:absolute; right:0.75rem; top:50%; transform:translateY(-50%);
-  width:16px; height:16px; border-radius:50%;
-  background:var(--ok) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6l2.5 2.5 4.5-5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center;
-  pointer-events:none; z-index:2;
+  content: '';
+  position: absolute;
+  top: 50%;
+  right: 0.75rem;
+  z-index: 2;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--ok) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 6l2.5 2.5 4.5-5' stroke='white' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat center;
+  transform: translateY(-50%); /* centred vertically */
+  pointer-events: none;
 }
-/* suppress on types that manage their own indicator */
-.field.is-valid.no-badge::after    { display:none; }
+
+/* Fields marked .no-badge (e.g. Date) show their state differently, so no check. */
+.field.is-valid.no-badge::after {
+  display: none;
+}
+
 .field.is-valid select,
-.field.is-valid input { border-color:rgba(192,0,26,0.6); background:rgba(192,0,26,0.08); }
+.field.is-valid input {
+  border-color: rgba(192, 0, 26, 0.6);
+  background: rgba(192, 0, 26, 0.08);
+}
+
 
 /* ─────────────────────────────────────────────────────────────────────────
-   VERIFY FIELD  (token, parent page ID)
-   — opt-in with class .verify-field; manages its own badge & spinner
+   7. DATE FIELD AND CALENDAR
 ───────────────────────────────────────────────────────────────────────── */
-.verify-field input { padding-right:2.6rem; }
 
-/* ok state */
-.verify-field.vf-ok input { border-color:var(--ok); background:rgba(34,197,94,0.07); box-shadow:0 0 0 3px rgba(34,197,94,0.12); }
-.verify-field.vf-ok label { color:var(--ok-label); }
-/* fail state */
-.verify-field.vf-fail input { border-color:var(--err); background:rgba(255,0,0,0.06); box-shadow:0 0 0 3px rgba(255,0,0,0.10); }
-.verify-field.vf-fail label { color:var(--err-label); }
-
-@keyframes fieldShake {
-  0%,100%{transform:translateX(0)} 15%{transform:translateX(-6px)} 30%{transform:translateX(5px)}
-  45%{transform:translateX(-4px)} 60%{transform:translateX(3px)} 75%{transform:translateX(-2px)} 90%{transform:translateX(1px)}
+.date-wrap {
+  position: relative;
 }
-.verify-field.vf-shake { animation:fieldShake 0.42s cubic-bezier(.36,.07,.19,.97) both; }
 
-/* badge */
-.vf-badge {
-  position:absolute; right:0.7rem; top:50%;
-  transform:translateY(-50%) scale(0) rotate(-45deg);
-  width:18px; height:18px; color:var(--ok);
-  opacity:0; pointer-events:none; z-index:3;
-  display:flex; align-items:center; justify-content:center;
+.date-wrap input[type="text"] {
+  padding-right: 2.6rem;        /* room for the calendar button */
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums; /* all digits the same width */
 }
-.vf-badge svg { width:100%; height:100%; display:block; }
-@keyframes badgePop {
-  0%  {transform:translateY(-50%) scale(0)    rotate(-45deg);opacity:0}
-  55% {transform:translateY(-50%) scale(1.25) rotate(8deg);  opacity:1}
-  75% {transform:translateY(-50%) scale(0.88) rotate(-4deg); opacity:1}
-  88% {transform:translateY(-50%) scale(1.07) rotate(2deg);  opacity:1}
-  100%{transform:translateY(-50%) scale(1)    rotate(0deg);  opacity:1}
+
+/* "YYYY-MM-DD" next to the label. */
+.date-fmt {
+  margin-left: 0.35rem;
+  font-size: 0.57rem;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: rgba(192, 0, 26, 0.45);
 }
-@keyframes checkDraw { from{stroke-dashoffset:20;opacity:0} to{stroke-dashoffset:0;opacity:1} }
-.vf-badge.show { animation:badgePop 0.52s cubic-bezier(0.34,1.56,0.64,1) forwards; }
-.vf-badge.show .vf-check { stroke-dasharray:20; stroke-dashoffset:20; animation:checkDraw 0.3s 0.28s ease forwards; }
-.vf-badge.hide { transform:translateY(-50%) scale(0) rotate(-45deg); opacity:0; transition:transform .18s ease,opacity .18s ease; }
 
-/* spinner */
-.vf-spinner {
-  position:absolute; right:0.75rem; top:50%; transform:translateY(-50%);
-  width:14px; height:14px;
-  border:2px solid rgba(192,0,26,0.2); border-top-color:rgba(192,0,26,0.75);
-  border-radius:50%; opacity:0; pointer-events:none; z-index:3; transition:opacity .15s ease;
-}
-@keyframes spinVf { to{transform:translateY(-50%) rotate(360deg)} }
-.vf-spinner.active { opacity:1; animation:spinVf 0.65s linear infinite; }
-
-/* ─────────────────────────────────────────────────────────────────────────
-   DATE FIELD
-───────────────────────────────────────────────────────────────────────── */
-.date-wrap { position:relative; }
-.date-wrap input[type="text"] { padding-right:2.6rem; letter-spacing:0.06em; font-variant-numeric:tabular-nums; }
-
-.date-fmt { font-size:0.57rem; letter-spacing:0.08em; color:rgba(192,0,26,0.45); font-weight:400; margin-left:0.35rem; }
-
+/* The calendar button inside the date field. */
 .date-btn {
-  position:absolute; right:0.55rem; top:50%; transform:translateY(-50%);
-  width:28px; height:28px; background:none; border:none; padding:0; cursor:pointer;
-  display:flex; align-items:center; justify-content:center;
-  color:rgba(192,0,26,0.6); border-radius:4px;
-  transition:color .15s ease,background .15s ease; z-index:2;
+  position: absolute;
+  top: 50%;
+  right: 0.55rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  color: rgba(192, 0, 26, 0.6);
+  background: none;
+  transform: translateY(-50%); /* centred vertically */
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    background 0.15s ease;
 }
-.date-btn:hover { color:rgba(255,80,80,0.95); background:rgba(192,0,26,0.1); }
-.date-btn svg   { width:15px; height:15px; display:block; pointer-events:none; }
-/* colour states driven by parent field class */
-.field.is-valid  .date-btn { color:rgba(34,197,94,0.85); }
-.field.has-error .date-btn { color:rgba(255,50,50,0.85); }
 
-/* calendar popup */
+.date-btn:hover {
+  color: rgba(255, 80, 80, 0.95);
+  background: rgba(192, 0, 26, 0.1);
+}
+
+.date-btn svg {
+  display: block;
+  width: 15px;
+  height: 15px;
+  pointer-events: none;
+}
+
+/* The calendar icon turns green or red with the field. */
+.field.is-valid .date-btn {
+  color: rgba(34, 197, 94, 0.85);
+}
+
+.field.has-error .date-btn {
+  color: rgba(255, 50, 50, 0.85);
+}
+
+/* The calendar that opens under the date field. */
 .cal-pop {
-  position:absolute; top:calc(100% + 6px); left:0; z-index:999;
-  width:256px; background:#110007;
-  border:1px solid rgba(192,0,26,0.35); border-radius:6px;
-  box-shadow:0 8px 32px rgba(0,0,0,0.6),0 0 40px rgba(192,0,26,0.08);
-  padding:10px;
-  animation:calDrop .18s cubic-bezier(0.22,1,0.36,1);
-}
-.cal-pop[hidden] { display:none; }
-@keyframes calDrop { from{opacity:0;transform:translateY(-6px) scale(0.97)} to{opacity:1;transform:translateY(0) scale(1)} }
-.cal-hdr  { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
-.cal-nav  { background:none; border:none; cursor:pointer; color:rgba(192,0,26,0.7); font-size:1.3rem; line-height:1; width:28px; height:28px; display:flex; align-items:center; justify-content:center; border-radius:4px; transition:color .12s,background .12s; padding:0; }
-.cal-nav:hover { color:#ff3333; background:rgba(192,0,26,0.1); }
-.cal-lbl  { background:none; border:none; cursor:pointer; color:rgba(255,200,200,0.9); font-family:'DM Sans',sans-serif; font-size:0.82rem; font-weight:500; letter-spacing:0.04em; padding:3px 6px; border-radius:4px; transition:background .12s; }
-.cal-lbl:hover { background:rgba(192,0,26,0.1); }
-.cal-wdays { display:grid; grid-template-columns:repeat(7,1fr); margin-bottom:4px; }
-.cal-wdays span { text-align:center; font-size:0.62rem; font-weight:500; color:rgba(192,0,26,0.6); letter-spacing:0.05em; padding:3px 0; }
-.cal-days { display:grid; grid-template-columns:repeat(7,1fr); gap:1px; }
-.cal-day  { aspect-ratio:1; display:flex; align-items:center; justify-content:center; font-size:0.75rem; color:rgba(255,210,210,0.8); border-radius:4px; cursor:pointer; border:none; background:none; transition:background .1s,color .1s; font-family:'DM Sans',sans-serif; }
-.cal-day:hover        { background:rgba(192,0,26,0.18); color:#fff; }
-.cal-day.dim          { color:rgba(255,180,180,0.22); }
-.cal-day.today        { border:1px solid rgba(192,0,26,0.5); color:#ff6666; font-weight:600; }
-.cal-day.sel          { background:var(--red); color:#fff; font-weight:600; box-shadow:0 0 10px rgba(192,0,26,0.5); }
-.cal-day.sel:hover    { background:var(--red-hot); }
-.cal-foot { margin-top:8px; border-top:1px solid rgba(192,0,26,0.15); padding-top:7px; display:flex; justify-content:center; }
-.cal-today-btn { background:none; border:1px solid rgba(192,0,26,0.3); color:rgba(220,60,60,0.85); font-family:'DM Sans',sans-serif; font-size:0.72rem; letter-spacing:0.06em; padding:4px 14px; border-radius:3px; cursor:pointer; transition:background .12s,color .12s; }
-.cal-today-btn:hover { background:rgba(192,0,26,0.12); color:#ff4444; }
-
-/* hint under a field (hidden while an error is showing) */
-.field-hint {
-  position:absolute; bottom:-1.1rem; left:0;
-  font-size:0.66rem; color:var(--label); font-weight:400;
-  pointer-events:none;
-}
-.field.has-error .field-hint, .field.vf-fail .field-hint { display:none; }
-
-/* "using the saved token" line, in place of the token field */
-.token-saved { grid-column:1 / -1; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-bottom:1.4rem; font-size:0.8rem; color:var(--text-input); }
-.token-saved[hidden] { display:none; }
-.token-saved-dot { width:8px; height:8px; border-radius:50%; background:var(--ok); box-shadow:0 0 6px var(--ok); }
-.token-saved-btn { background:none; border:none; padding:0; color:var(--label-f); font:inherit; text-decoration:underline; cursor:pointer; }
-.token-saved-btn:hover { color:var(--red-hot); }
-
-/* ─────────────────────────────────────────────────────────────────────────
-   SUBMIT ROW
-───────────────────────────────────────────────────────────────────────── */
-.submit-row { margin-top:0.4rem; padding-top:1.4rem; border-top:1px solid rgba(192,0,26,0.18); display:flex; align-items:center; gap:1rem; flex-wrap:wrap; }
-.btn-submit { position:relative; overflow:hidden; flex-shrink:0; padding:0.8125rem 2.1rem; background:linear-gradient(135deg,#0A0005 0%,#5C0010 55%,var(--red) 100%); color:var(--white); font-family:'DM Sans',sans-serif; font-size:0.875rem; font-weight:500; letter-spacing:0.04em; border:none; border-radius:3px; cursor:pointer; transition:box-shadow .2s ease,transform .1s ease,filter .2s ease; }
-.btn-submit::after { content:''; position:absolute; inset:0; background:linear-gradient(105deg,transparent 30%,rgba(255,255,255,0.2) 50%,transparent 70%); transform:translateX(-100%); transition:transform .5s ease; }
-.btn-submit:hover         { filter:brightness(1.12); box-shadow:0 6px 28px rgba(192,0,26,0.55); }
-.btn-submit:hover::after  { transform:translateX(100%); }
-.btn-submit:active        { transform:scale(0.975); box-shadow:none; }
-.btn-submit:disabled      { background:#666; cursor:not-allowed; box-shadow:none; filter:none; }
-.btn-submit:disabled::after { display:none; }
-.btn-spinner { display:none; width:13px; height:13px; border:1.5px solid rgba(255,255,255,0.3); border-top-color:#fff; border-radius:50%; animation:spin .65s linear infinite; position:absolute; right:0.8rem; top:50%; transform:translateY(-50%); }
-@keyframes spin { to{transform:translateY(-50%) rotate(360deg)} }
-.btn-submit.loading .btn-spinner { display:block; }
-.btn-submit.loading { padding-right:2.6rem; }
-.status-msg { font-size:0.8rem; font-weight:400; min-height:1rem; opacity:0; transition:opacity .25s ease; }
-.status-msg.ok  { color:#FF6B6B; opacity:1; }
-.status-msg.err { color:#FF4444; opacity:1; }
-.status-msg a { color:inherit; text-decoration:underline; }
-
-/* ─────────────────────────────────────────────────────────────────────────
-   FOOTER BAR
-───────────────────────────────────────────────────────────────────────── */
-.footer-bar { position:fixed; bottom:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--red-dim),var(--red),var(--red-hot),var(--ember),var(--red),var(--red-dim)); background-size:200% 100%; animation:barShift 4s linear infinite; z-index:200; box-shadow:0 0 12px rgba(192,0,26,0.7),0 0 24px rgba(192,0,26,0.3); }
-@keyframes barShift { 0%{background-position:0% 50%} 100%{background-position:200% 50%} }
-
-/* ─────────────────────────────────────────────────────────────────────────
-   HYPERSPEED INTRO
-───────────────────────────────────────────────────────────────────────── */
-#intro { position:fixed; inset:0; z-index:9999; background:#000; pointer-events:none; }
-#introCanvas { display:block; width:100%; height:100%; }
-#intro.fading { transition:opacity .75s cubic-bezier(0.4,0,0.2,1); opacity:0; }
-
-/* ─────────────────────────────────────────────────────────────────────────
-   RESPONSIVE
-───────────────────────────────────────────────────────────────────────── */
-@media (max-width:820px) {
-  .hero { grid-template-columns:1fr; min-height:auto; }
-  .hero-left { min-height:55vw; padding:2.5rem 1.75rem; }
-  .hero-right { padding:2rem 1.5rem 3rem; }
-  .hero-right::before { display:none; }
-}
-@media (max-width:640px) {
-  .form-grid { grid-template-columns:1fr; }
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 999; /* above everything else on the form */
+  width: 256px;
+  padding: 10px;
+  border: 1px solid rgba(192, 0, 26, 0.35);
+  border-radius: 6px;
+  background: #110007;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 40px rgba(192, 0, 26, 0.08);
 }
 
-/* ─────────────────────────────────────────────────────────────────────────
-   SITH TRANSFORMATION (scoped keyframes)
-───────────────────────────────────────────────────────────────────────── */
-@keyframes sx-bgTransform  { 0%{fill:#ff5630}60%{fill:#ff5630}100%{fill:#1a0000} }
-@keyframes sx-skinFade     { 0%{fill:#ffe2d9}60%{fill:#ffe2d9}100%{fill:#1e0e0e} }
-@keyframes sx-hairFade     { 0%{fill:#ffab00}55%{fill:#ffab00}100%{fill:#110404} }
-@keyframes sx-eyeXform     { 0%{fill:#344563}55%{fill:#344563}85%{fill:#ffcc00}100%{fill:#ffaa00} }
-@keyframes sx-mouthFade    { 0%{fill:#de350b}60%{fill:#de350b}100%{fill:#440000} }
-@keyframes sx-darkOverlay  { 0%{opacity:0}40%{opacity:0}100%{opacity:0.82} }
-@keyframes sx-hoodAppear   { 0%,50%{opacity:0}100%{opacity:1} }
-@keyframes sx-tattooAppear { 0%,65%{opacity:0}100%{opacity:0.75} }
-@keyframes sx-eyePupil     { 0%,65%{opacity:0}100%{opacity:1} }
-@keyframes sx-eyeGlowIn    { 0%,65%{opacity:0}80%{opacity:0.9}90%{opacity:0.5}100%{opacity:0.8} }
-@keyframes sx-eyePulseLoop { 0%,100%{opacity:0.75}50%{opacity:0.3} }
-@keyframes sx-flashIn      { 0%,58%{opacity:0}62%{opacity:0.7}66%{opacity:0}100%{opacity:0} }
-@keyframes sx-glowIn       { 0%,55%{opacity:0}100%{opacity:0.2} }
-@keyframes sx-shadowGrow   { 0%,55%{filter:none}100%{filter:drop-shadow(0 0 18px rgba(180,0,0,.7)) drop-shadow(0 0 36px rgba(100,0,0,.4))} }
-@keyframes sx-saberPulse   { 0%,100%{opacity:0.4}50%{opacity:0.65} }
-@keyframes sx-corePulse    { 0%,100%{opacity:1}92%{opacity:0.85}96%{opacity:1} }
-@keyframes sx-auraIn       { 0%,60%{opacity:0}100%{opacity:1} }
-@keyframes sx-auraLoop     { 0%,100%{stroke-width:2;opacity:0.2}50%{stroke-width:1;opacity:0.06} }
-@keyframes sx-float        { 0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)} }
+.cal-pop[hidden] {
+  display: none;
+}
 
-.sx-svg    { animation:sx-shadowGrow 8s forwards; }
-.sx-bg     { animation:sx-bgTransform  8s forwards ease-in-out; }
-.sx-skin   { animation:sx-skinFade     8s forwards ease-in-out; }
-.sx-hair   { animation:sx-hairFade     8s forwards ease-in-out; }
-.sx-eye    { animation:sx-eyeXform     8s forwards ease-in-out; }
-.sx-mouth  { animation:sx-mouthFade    8s forwards ease-in-out; }
-.sx-dark   { animation:sx-darkOverlay  8s forwards ease-in-out; }
-.sx-hood   { animation:sx-hoodAppear   8s forwards ease-in-out; }
-.sx-tat    { animation:sx-tattooAppear 8s forwards ease-in-out; }
-.sx-pupil  { animation:sx-eyePupil     8s forwards; }
-.sx-eglow  { animation:sx-eyeGlowIn    8s forwards, sx-eyePulseLoop 2.5s 8s ease-in-out infinite; }
-.sx-flash  { animation:sx-flashIn      8s forwards; pointer-events:none; }
-.sx-amb    { animation:sx-glowIn       8s forwards; }
-.sx-aura   { animation:sx-auraIn       8s forwards, sx-auraLoop 4s 8s infinite; }
-.sx-sbo    { animation:sx-saberPulse   1.8s 8s infinite; }
-.sx-sbc    { animation:sx-corePulse    2.3s 8s infinite; }
-#sx-root   { animation:sx-float        4s 8.2s ease-in-out infinite; display:block; }
+/* Calendar header: ‹  October 2026  › */
+.cal-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+/* The ‹ and › buttons. */
+.cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  font-size: 1.3rem;
+  line-height: 1;
+  color: rgba(192, 0, 26, 0.7);
+  background: none;
+  cursor: pointer;
+  transition:
+    color 0.12s,
+    background 0.12s;
+}
+
+.cal-nav:hover {
+  color: #FF3333;
+  background: rgba(192, 0, 26, 0.1);
+}
+
+/* The month name. Clicking it goes back to this month. */
+.cal-lbl {
+  padding: 3px 6px;
+  border: none;
+  border-radius: 4px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.82rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: rgba(255, 200, 200, 0.9);
+  background: none;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.cal-lbl:hover {
+  background: rgba(192, 0, 26, 0.1);
+}
+
+/* Mo Tu We Th Fr Sa Su */
+.cal-wdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  margin-bottom: 4px;
+}
+
+.cal-wdays span {
+  padding: 3px 0;
+  text-align: center;
+  font-size: 0.62rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  color: rgba(192, 0, 26, 0.6);
+}
+
+/* The days: 7 columns. */
+.cal-days {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 1px;
+}
+
+/* One day. */
+.cal-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1; /* square */
+  border: none;
+  border-radius: 4px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.75rem;
+  color: rgba(255, 210, 210, 0.8);
+  background: none;
+  cursor: pointer;
+  transition:
+    background 0.1s,
+    color 0.1s;
+}
+
+.cal-day:hover {
+  color: var(--white);
+  background: rgba(192, 0, 26, 0.18);
+}
+
+/* A day from the month before or after. */
+.cal-day.dim {
+  color: rgba(255, 180, 180, 0.22);
+}
+
+.cal-day.today {
+  border: 1px solid rgba(192, 0, 26, 0.5);
+  font-weight: 600;
+  color: #FF6666;
+}
+
+/* The picked day. */
+.cal-day.sel {
+  font-weight: 600;
+  color: var(--white);
+  background: var(--red);
+  box-shadow: 0 0 10px rgba(192, 0, 26, 0.5);
+}
+
+.cal-day.sel:hover {
+  background: var(--red-hot);
+}
+
+/* Calendar footer with the "Today" button. */
+.cal-foot {
+  display: flex;
+  justify-content: center;
+  margin-top: 8px;
+  padding-top: 7px;
+  border-top: 1px solid rgba(192, 0, 26, 0.15);
+}
+
+.cal-today-btn {
+  padding: 4px 14px;
+  border: 1px solid rgba(192, 0, 26, 0.3);
+  border-radius: 3px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: rgba(220, 60, 60, 0.85);
+  background: none;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    color 0.12s;
+}
+
+.cal-today-btn:hover {
+  color: #FF4444;
+  background: rgba(192, 0, 26, 0.12);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   8. TOKEN STATUS LINE
+   ● Confluence token found in .env · Authenticated as …
+   The dot is green when the token works, red when it's missing or rejected, grey while checking.
+   Two columns: the dot, then the text with the "Check again" button under it.
+───────────────────────────────────────────────────────────────────────── */
+
+.token-status {
+  grid-column: 1 / -1; /* spans both form columns */
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 0.5rem;
+  row-gap: 0.3rem;
+  align-items: start;
+  margin-bottom: 1.4rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-input);
+  overflow-wrap: anywhere; /* long paths can break anywhere */
+}
+
+.token-status-dot {
+  width: 8px;
+  height: 8px;
+  margin-top: 0.4em; /* lines the dot up with the first line of text */
+  border-radius: 50%;
+  background: var(--ok);
+}
+
+/* The text and the button both go in the second column. */
+.token-status-text,
+.token-status-btn {
+  grid-column: 2;
+  justify-self: start;
+}
+
+.token-status.bad .token-status-dot {
+  background: var(--err);
+}
+
+.token-status.bad .token-status-text {
+  color: var(--err-label);
+}
+
+.token-status.checking .token-status-dot {
+  background: #666666;
+}
+
+/* "Check again": looks like a link. */
+.token-status-btn {
+  padding: 0;
+  border: none;
+  font: inherit;
+  text-decoration: underline;
+  color: var(--label-f);
+  background: none;
+  cursor: pointer;
+}
+
+.token-status-btn:hover {
+  color: var(--red-hot);
+}
+
+.token-status-btn[hidden] {
+  display: none;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   9. CREATE PAGE BUTTON AND RESULT MESSAGE
+───────────────────────────────────────────────────────────────────────── */
+
+.submit-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 0.4rem;
+  padding-top: 1.4rem;
+  border-top: 1px solid rgba(192, 0, 26, 0.18);
+}
+
+.btn-submit {
+  position: relative; /* the spinner is placed inside it */
+  overflow: hidden;
+  flex-shrink: 0;
+  padding: 0.8125rem 2.1rem;
+  border: none;
+  border-radius: 3px;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: var(--white);
+  background: var(--red);
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    transform 0.1s ease;
+}
+
+.btn-submit:hover {
+  background: var(--red-hot);
+}
+
+/* Pressed: shrinks a little. */
+.btn-submit:active {
+  transform: scale(0.975);
+}
+
+/* While the page is being created. Comes after :hover, so it stays grey on hover. */
+.btn-submit:disabled {
+  background: #666666;
+  cursor: not-allowed;
+}
+
+/* Room for the spinner while loading. */
+.btn-submit.loading {
+  padding-right: 2.6rem;
+}
+
+/* "Release page created with 3 PRs — open in Confluence", or an error. */
+.status-msg {
+  min-height: 1rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+}
+
+.status-msg.ok {
+  color: #FF6B6B;
+  opacity: 1;
+}
+
+.status-msg.err {
+  color: #FF4444;
+  opacity: 1;
+}
+
+.status-msg a {
+  color: inherit;
+  text-decoration: underline;
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   10. SMALL SCREENS
+───────────────────────────────────────────────────────────────────────── */
+
+/* Tablets and phones: the two panels stack, the heading on top of the form. */
+@media (max-width: 820px) {
+  .hero {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .hero-left {
+    min-height: 55vw;
+    padding: 2.5rem 1.75rem;
+  }
+
+  .hero-right {
+    padding: 2rem 1.5rem 3rem;
+  }
+
+  .hero-right::before {
+    display: none; /* no line between panels that are stacked */
+  }
+}
+
+/* Phones: one field per row. */
+@media (max-width: 640px) {
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   PART 2 — ADVANCED: ANIMATIONS AND EFFECTS
+
+   How these work:
+   - @keyframes name { from {...} to {...} } describes an animation: how styles change over time.
+   - "animation: name 2s ease forwards" plays it: for 2 seconds, easing in and out,
+     and "forwards" keeps the end state when it's done. "infinite" repeats it forever.
+   - Many elements start hidden (opacity: 0). effects.js adds a class like .visible
+     at the right moment, and a "transition" fades them in.
+═══════════════════════════════════════════════════════════════════════════ */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   11. HYPERSPEED INTRO
+   A black layer over the whole page with a canvas that effects.js draws the stars on.
+   When the intro is done, effects.js adds .fading and the layer fades out.
+───────────────────────────────────────────────────────────────────────── */
+
+#intro {
+  position: fixed;
+  inset: 0; /* covers the whole window */
+  z-index: 9999;
+  background: #000000;
+  pointer-events: none;
+}
+
+#introCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#intro.fading {
+  opacity: 0;
+  transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   12. LEFT PANEL REVEAL
+   After the intro, effects.js shows the left panel's parts one after another.
+───────────────────────────────────────────────────────────────────────── */
+
+/* The short red line: fades in when the text block gets .revealed. */
+.hero-left-content::before {
+  opacity: 0;
+  transition: opacity 0.6s ease 0.1s;
+}
+
+.hero-left-content.revealed::before {
+  opacity: 1;
+}
+
+/* "System status", the divider and the body text: fade in when they get .visible. */
+.eyebrow,
+.hero-divider {
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+.eyebrow.visible,
+.hero-divider.visible {
+  opacity: 1;
+}
+
+/* The body text also moves up a little while it fades in. */
+.hero-body {
+  opacity: 0;
+  transform: translateY(8px);
+  transition:
+    opacity 640ms ease,
+    transform 640ms ease;
+}
+
+.hero-body.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* The heading letters. Each letter goes through three steps (effects.js sets the class):
+     .rising  — rises up from below, fading in, still shifted to the right
+     .sliding — slides left into its place
+     .done    — in place */
+:root {
+  --rise-start: 65px;   /* how far below its place a letter starts */
+  --slide-start: 48px;  /* how far right of its place a letter starts */
+  --rise-time: 580ms;
+  --slide-time: 460ms;
+}
+
+.char {
+  opacity: 0;
+  transform: translateY(var(--rise-start)) translateX(var(--slide-start));
+  will-change: transform, opacity; /* tells the browser these will animate, so it's smoother */
+}
+
+.char.rising {
+  animation: rise var(--rise-time) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.char.sliding {
+  opacity: 1;
+  transform: translateY(0) translateX(var(--slide-start));
+  animation: slide var(--slide-time) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.char.done {
+  opacity: 1;
+  transform: translateY(0) translateX(0);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--rise-start)) translateX(var(--slide-start));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(var(--slide-start));
+  }
+}
+
+@keyframes slide {
+  from {
+    transform: translateY(0) translateX(var(--slide-start));
+  }
+  to {
+    transform: translateY(0) translateX(0);
+  }
+}
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   13. SITH FIGURE
+   An SVG avatar in the left panel. Over 8 seconds it turns into a hooded Sith:
+   colours darken, a hood and tattoos appear, the eyes turn yellow and glow.
+   effects.js adds the lightsaber and the lightning on top.
+   All its class names start with "sx-" so they can't clash with the rest of the page.
+───────────────────────────────────────────────────────────────────────── */
+
+/* Position: centred in the left panel, a little above the middle. Fades in on .visible. */
+.sith-wrap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  width: clamp(180px, 34%, 270px);
+  opacity: 0;
+  transform: translate(-50%, -58%);
+  filter: drop-shadow(0 0 40px rgba(200, 0, 20, 0.45)) drop-shadow(0 0 80px rgba(150, 0, 10, 0.25));
+  pointer-events: none;
+  transition: opacity 1.8s ease;
+}
+
+.sith-wrap.visible {
+  opacity: 1;
+}
+
+.sith-wrap svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Which part of the figure plays which animation. Most run once for 8 seconds;
+   the "loop" ones start after 8 seconds (the second time value) and repeat forever. */
+.sx-svg   { animation: sx-shadowGrow   8s forwards; }
+.sx-bg    { animation: sx-bgTransform  8s forwards ease-in-out; }
+.sx-skin  { animation: sx-skinFade     8s forwards ease-in-out; }
+.sx-hair  { animation: sx-hairFade     8s forwards ease-in-out; }
+.sx-eye   { animation: sx-eyeXform     8s forwards ease-in-out; }
+.sx-mouth { animation: sx-mouthFade    8s forwards ease-in-out; }
+.sx-dark  { animation: sx-darkOverlay  8s forwards ease-in-out; }
+.sx-hood  { animation: sx-hoodAppear   8s forwards ease-in-out; }
+.sx-tat   { animation: sx-tattooAppear 8s forwards ease-in-out; }
+.sx-pupil { animation: sx-eyePupil     8s forwards; }
+.sx-eglow { animation: sx-eyeGlowIn    8s forwards, sx-eyePulseLoop 2.5s 8s ease-in-out infinite; }
+.sx-flash { animation: sx-flashIn      8s forwards; pointer-events: none; }
+.sx-amb   { animation: sx-glowIn       8s forwards; }
+.sx-aura  { animation: sx-auraIn       8s forwards, sx-auraLoop 4s 8s infinite; }
+.sx-sbo   { animation: sx-saberPulse   1.8s 8s infinite; }  /* lightsaber glow */
+.sx-sbc   { animation: sx-corePulse    2.3s 8s infinite; }  /* lightsaber core */
+#sx-root  { animation: sx-float        4s 8.2s ease-in-out infinite; display: block; }  /* gentle floating */
+
+/* The animations. The percentages are points in time: 60% of 8 seconds is 4.8 seconds. */
+
+/* Colours: each part keeps its colour until a point, then darkens. */
+@keyframes sx-bgTransform  { 0%, 60% { fill: #FF5630; } 100% { fill: #1A0000; } }   /* orange circle → near black */
+@keyframes sx-skinFade     { 0%, 60% { fill: #FFE2D9; } 100% { fill: #1E0E0E; } }   /* skin → dark */
+@keyframes sx-hairFade     { 0%, 55% { fill: #FFAB00; } 100% { fill: #110404; } }   /* yellow hair → dark */
+@keyframes sx-eyeXform     { 0%, 55% { fill: #344563; } 85% { fill: #FFCC00; } 100% { fill: #FFAA00; } }  /* blue eyes → yellow */
+@keyframes sx-mouthFade    { 0%, 60% { fill: #DE350B; } 100% { fill: #440000; } }   /* red mouth → dark red */
+
+/* Layers that appear: invisible until a point, then fade in. */
+@keyframes sx-darkOverlay  { 0%, 40% { opacity: 0; } 100% { opacity: 0.82; } }      /* dark shadow over the face */
+@keyframes sx-hoodAppear   { 0%, 50% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes sx-tattooAppear { 0%, 65% { opacity: 0; } 100% { opacity: 0.75; } }
+@keyframes sx-eyePupil     { 0%, 65% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes sx-eyeGlowIn    { 0%, 65% { opacity: 0; } 80% { opacity: 0.9; } 90% { opacity: 0.5; } 100% { opacity: 0.8; } }
+@keyframes sx-glowIn       { 0%, 55% { opacity: 0; } 100% { opacity: 0.2; } }       /* red glow at the bottom */
+@keyframes sx-auraIn       { 0%, 60% { opacity: 0; } 100% { opacity: 1; } }         /* red ring around the figure */
+@keyframes sx-flashIn      { 0%, 58% { opacity: 0; } 62% { opacity: 0.7; } 66%, 100% { opacity: 0; } }  /* a quick white flash */
+@keyframes sx-shadowGrow   { 0%, 55% { filter: none; } 100% { filter: drop-shadow(0 0 18px rgba(180, 0, 0, 0.7)) drop-shadow(0 0 36px rgba(100, 0, 0, 0.4)); } }
+
+/* Loops, once the change is done. */
+@keyframes sx-eyePulseLoop { 0%, 100% { opacity: 0.75; } 50% { opacity: 0.3; } }
+@keyframes sx-auraLoop     { 0%, 100% { stroke-width: 2; opacity: 0.2; } 50% { stroke-width: 1; opacity: 0.06; } }
+@keyframes sx-saberPulse   { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.65; } }
+@keyframes sx-corePulse    { 0%, 100% { opacity: 1; } 92% { opacity: 0.85; } 96% { opacity: 1; } }  /* a tiny flicker */
+@keyframes sx-float        { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+
+
+/* ─────────────────────────────────────────────────────────────────────────
+   14. SMALL ANIMATIONS
+───────────────────────────────────────────────────────────────────────── */
+
+/* The form card fades in and moves up a little when the page loads. */
+.form-card {
+  opacity: 0;
+  transform: translateY(14px);
+  animation: cardIn 0.75s cubic-bezier(0.22, 1, 0.36, 1) 0.15s forwards;
+}
+
+@keyframes cardIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* The calendar drops in when it opens. */
+.cal-pop {
+  animation: calDrop 0.18s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes calDrop {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* The token line shakes when "Create page" is clicked without a working token. */
+.token-status.shake {
+  animation: shake 0.42s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  15%      { transform: translateX(-6px); }
+  30%      { transform: translateX(5px); }
+  45%      { transform: translateX(-4px); }
+  60%      { transform: translateX(3px); }
+  75%      { transform: translateX(-2px); }
+  90%      { transform: translateX(1px); }
+}
+
+/* The spinning circle in the "Create page" button while the page is being created. */
+.btn-spinner {
+  display: none;
+  position: absolute;
+  top: 50%;
+  right: 0.8rem;
+  width: 13px;
+  height: 13px;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border-top-color: var(--white); /* one bright edge, so you can see it turn */
+  border-radius: 50%;
+  transform: translateY(-50%);
+  animation: spin 0.65s linear infinite;
+}
+
+.btn-submit.loading .btn-spinner {
+  display: block;
+}
+
+@keyframes spin {
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
+}

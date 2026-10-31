@@ -193,7 +193,6 @@
       ]);
       show('heroDivider');
       show('heroBody', 130);
-      show('trustRow', 410);
     }, 150);
   }, { once: true });
 })();

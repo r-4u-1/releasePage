@@ -12,7 +12,7 @@ You pick an app, two git tags, a version and a release date. The server:
 ```
  Form (public/)               Local server (server/)                 Outside
 ┌──────────────────┐        ┌──────────────────────────────┐
-│ Token            │──────▶│ check token ──────────────────┼──▶ Confluence
+│ Token status     │◀──────│ check .env token ─────────────┼──▶ Confluence
 │ App              │──────▶│ list apps / tags ─────────────┼──▶ git (app folder)
 │ Version, Date    │        │                              │
 │ From / To tag    │        │                              │
@@ -62,12 +62,18 @@ monorepo/
 
 **5. Get a Confluence personal access token.** In Confluence: **your profile picture → Settings → Personal Access Tokens → Create token**.
 
-**6. (Optional) Let the tool remember the token.** Create an empty `.env` file in the `server` folder. See [The token](#the-token).
+**6. Add the token to `server/.env`** (create the file if it doesn't exist):
+
+```
+CONFLUENCE_TOKEN=<your token>
+```
+
+`server/.gitignore` already lists `.env`, so the token is never committed. See [The token](#the-token).
 
 **7. Start the server** and open **http://localhost:3000/**.
 
 ```bash
-npm run dev
+npm run release-page
 ```
 
 ---
@@ -75,9 +81,13 @@ npm run dev
 ## Walking through the form
 
 ### 1. Confluence token
-Paste your personal access token. The server asks Confluence who the token belongs to. If it works, you see a green check, and the server keeps the token in memory for creating the page.
+There's no token field. At the top of the form you see whether the server found a working token in `server/.env`:
 
-If a valid token is already saved in `.env`, this field is replaced by **● Using the token saved in .env**. Click **Use a different token** to type another one.
+- **● Confluence token found in .env · Authenticated as &lt;you&gt;** (green): ready.
+- **● No Confluence token found. Add the line CONFLUENCE_TOKEN=&lt;your token&gt; to …\.env** (red): add it, then click **Check again**. No restart needed.
+- **● Confluence rejected the token in …\.env** (red): the token is wrong or expired. Replace it, then click **Check again**.
+
+**Create page** doesn't run until the token works.
 
 ### 2. App
 A list of the top-level folders in the monorepo. Picking an app loads its git tags into **From tag** and **To tag**.
@@ -111,13 +121,12 @@ Creates the release page and opens it in your browser. Under the button you see 
 │ ┌────────┬──────────────┬────────────┬──────┐     │ │ ℹ Verification│ │
 │ │ Author │ Pull request │ isVerified │ Note │     │ │ This app needs│ │
 │ ├────────┼──────────────┼────────────┼──────┤     │ │ every PR …    │ │
-│ │ Alice  │ Add …        │ ☐          │      │     │ ╰──────────────╯ │
+│ │ Alice  │ Add …        │            │      │     │ ╰──────────────╯ │
 │ └────────┴──────────────┴────────────┴──────┘     │                  │
 └───────────────────────────────────────────────────┴──────────────────┘
 ```
 
-- **isVerified** is a Confluence checkbox (a task), so people can tick it right on the page.
-- **Note** is empty, for people to fill in.
+- **isVerified** and **Note** are empty, for people to fill in on the page.
 - The info box is Confluence's own **Info** panel, which has rounded corners. Confluence doesn't allow custom styles in page content, so its look is Confluence's.
 
 ---
@@ -150,23 +159,23 @@ If someone else pushed the last commit to a PR's branch, they're shown instead.
 
 ## The token
 
-The token is **never saved by the page and never sent back to the browser**.
+The server reads the token from **`server/.env`**, from this line:
 
-| Situation | What happens |
-|---|---|
-| `server/.env` doesn't exist | The token lives only in the server's memory until it stops. |
-| `server/.env` exists, no token in it | After you paste a token and it passes the check, it's saved as `CONFLUENCE_TOKEN=…`. |
-| `server/.env` has a valid token | It's loaded at start, and the token field is hidden. |
-| `server/.env` has a token Confluence rejects | The field is shown again with a message. A new valid token replaces the old one. |
+```
+CONFLUENCE_TOKEN=<your token>
+```
 
-Creating `.env` is how you opt in. The tool never creates it. `.env` is in `.gitignore`, so it isn't committed. A wrong token is never saved.
+Quotes around the token are fine. The file is read again on every check, so adding or changing the token works without restarting the server.
 
-### Keeping the saved token safe
-Since the server can create pages with your token, it only accepts requests that are:
-- **from this computer:** it listens on `127.0.0.1` only
-- **from its own page:** requests from other websites, or addressed to it under any other name than `localhost` or `127.0.0.1`, are refused
+The token **never reaches the page**: the form only learns whether it works and whose it is. The tool never writes to `.env`.
 
-Anything else running on your computer can still reach it, so on a shared machine, don't save the token.
+### Keeping the token safe
+- **Kept out of git:** `server/.gitignore` lists `.env`.
+- **Only this tool reads it:** a token in the monorepo's root `.env` could be loaded by other tools there (dev servers, Docker Compose, build tools). In `server/.env`, only this server sees it.
+- **The server only accepts requests from this computer:** it listens on `127.0.0.1` only.
+- **And only from its own page:** requests from other websites, or addressed to it under any other name than `localhost` or `127.0.0.1`, are refused.
+
+Anything else running on your computer can still reach it, so don't keep the token in `.env` on a shared machine.
 
 ---
 
@@ -185,7 +194,7 @@ Everything is in [`server/config.json`](server/config.json).
 | `appsWithVerification` | Apps whose page gets the **isVerified** and **Note** columns and the info box. |
 | `verificationInfo` | The text in the info box. |
 
-`npm run dev` restarts the server when its files change; `npm start` doesn't.
+`npm run release-page` restarts the server when its files change; `npm start` doesn't.
 
 ---
 
@@ -199,9 +208,18 @@ public/                 The form, served at http://localhost:3000/
 ├── form.js             The form: field checks, apps → tags, creating the page
 └── effects.js          The hyperspeed intro, the heading letters and the Sith figure
 server/
-├── server.js           The whole server: the page, the API, git, the token and the Confluence page
+├── server.js           What each API path does, and which path runs what
+├── lib/                The details server.js uses
+│   ├── settings.js     config.json, the port, the paths and Confluence's address
+│   ├── helpers.js      fail() and other small helpers
+│   ├── git.js          Apps, tags and merged PRs
+│   ├── token.js        Reads the token from .env
+│   ├── confluence.js   Checks the token, creates the page
+│   ├── release-page-content.js  The page's table and info box
+│   ├── browser.js      Opens the new page in the browser
+│   └── web.js          Who may call the server, reading requests, sending answers
 ├── config.json         Settings
-└── .env                Your saved token (you create it; gitignored)
+└── .env                Your Confluence token (you create it; gitignored)
 ```
 
 ---
@@ -212,11 +230,10 @@ All answers are JSON with `ok: true/false`. Errors come with a `message` and a m
 
 | Method | Path | Does |
 |---|---|---|
-| `GET` | `/api/token` | Whether a token is saved, and whether one can be saved. Never returns the token. |
-| `POST` | `/api/verify/token` | `{ token? }`: checks the token, or the saved one when none is sent. A working token is kept for creating pages; a typed one is saved to `.env`. |
+| `GET` | `/api/token` | Checks the token in `server/.env` with Confluence. Returns `message` ("Authenticated as …"), or an error saying the token is missing or rejected. Never returns the token. |
 | `GET` | `/api/apps` | The app names. |
-| `GET` | `/api/apps/:app/tags` | The app's `OLD` / `NEW` tag names, highest number first. |
-| `POST` | `/api/release` | `{ token?, app, from, to, version, date }`: creates the release page, opens it, and returns `pageUrl` and `pullRequestCount`. |
+| `GET` | `/api/tags?app=…` | The app's `OLD` / `NEW` tag names, highest number first. |
+| `POST` | `/api/release` | `{ app, from, to, version, date }`: creates the release page, opens it, and returns `pageUrl` and `pullRequestCount`. |
 
 ---
 
@@ -224,14 +241,22 @@ All answers are JSON with `ok: true/false`. Errors come with a `message` and a m
 
 | You see | Try |
 |---|---|
-| **Token rejected by Confluence** | The token is wrong or expired. Create a new one. For Cloud, also set `confluenceEmail`. |
-| **Could not reach Confluence** | Check `confluenceBaseUrl` in `config.json`, and that you're on the network or VPN that can reach Confluence. If the browser can open Confluence but the tool can't, your company may inspect HTTPS traffic: start Node with `NODE_EXTRA_CA_CERTS=<company-root.pem>`. Never use `NODE_TLS_REJECT_UNAUTHORIZED=0`. |
-| **No parent page for &lt;app&gt;** | Add the app to `parentPageIds` in `config.json`. |
-| **Parent page … not found** | The ID in `parentPageIds` is wrong, or your token can't see that page. |
-| **No merged PRs in &lt;app&gt; between …** | No commit between the tags has `Merged PR` in its message and changes the app's folder. Check the tags are in the right order (OLD, then NEW). |
-| **A page with this title already exists** | A release page for this app and date already exists in the space. Rename or delete it in Confluence. |
+| **This page isn't connected to the release server** | The page was opened from somewhere else, e.g. VS Code's Live Server or straight from the file. Start the server with `npm run release-page` in the `server` folder and open **http://localhost:3000/**. |
+| **Can't reach the release server** | The server isn't running. Start it with `npm run release-page` in the `server` folder. |
+| **No Confluence token found** | Add `CONFLUENCE_TOKEN=<your token>` to `server/.env` (the message shows the exact path), then click **Check again**. |
+| **Confluence rejected the token** | The token is wrong or expired. Create a new one and replace it in `server/.env`. For Cloud, also set `confluenceEmail`. |
+| **Can't find Confluence at …** / **Can't reach Confluence at …** / **… refused the connection** | Check `confluenceBaseUrl` in `server/config.json`, and that you're on the network or VPN that can reach Confluence. |
+| **Confluence at … didn't answer within 30 seconds** | Usually the network or VPN. Check that you can open Confluence in the browser. |
+| **Can't verify the security certificate of Confluence** | Your company inspects HTTPS traffic. Start Node with `NODE_EXTRA_CA_CERTS=<company-root.pem>`. Never use `NODE_TLS_REJECT_UNAUTHORIZED=0`. |
+| **Confluence at … has nothing at /rest/api/… (HTTP 404)** or **… sent the request somewhere else** | `confluenceBaseUrl` doesn't point at Confluence itself. For Confluence Cloud it ends in `/wiki`. |
+| **Your Confluence account isn't allowed to do this** | Your account can't see the parent page or add pages in its space. Ask a space admin. |
+| **&lt;app&gt; has no parent page yet** | Add the app to `parentPageIds` in `server/config.json`. |
+| **There's no Confluence page with ID …** | The ID in `parentPageIds` is wrong, or your account can't see that page. |
+| **No merged PRs in &lt;app&gt; between …** | No commit between the tags has `Merged PR` in its message and changes the app's folder. Check that **From tag** is the older tag and **To tag** the newer one. |
+| **Confluence said: A page with this title already exists** | A release page for this app and date already exists in the space. Rename or delete it in Confluence. |
 | App list says **No apps found** | No top-level folder matches `appPattern`. Check the folder names, or `repoRoot` in `config.json`. |
 | **No app-x-&lt;n&gt;-OLD / -NEW tags found** | The app has no tags named like `app-x-12-OLD`. Fetch them with `git fetch --tags`. |
-| Page shows **Forbidden** | Open the page as `http://localhost:3000/` or `http://127.0.0.1:3000/`. |
+| **This server only answers its own page** | Open the page as `http://localhost:3000/` or `http://127.0.0.1:3000/`. |
+| **Git isn't installed, or isn't on the PATH** | Install git, then restart the server. |
 | `EADDRINUSE` when starting | Port 3000 is in use. Stop the other program, or start with a different `PORT`. |
 | The new page doesn't open by itself | Use the **open in Confluence** link under the button. |

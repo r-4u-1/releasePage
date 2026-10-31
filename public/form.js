@@ -3,8 +3,17 @@
 
 const $ = id => document.getElementById(id);
 
-// Calls the server. GET without a body, POST with one.
-// Returns the JSON answer, or throws an Error with the server's message.
+// What to do when the page can't talk to the release server.
+const START_SERVER = 'Start the server with "npm run release-page" in the server folder, then open the address it prints (http://localhost:3000/).';
+
+// An error for when the page can't talk to the release server at all.
+// notConnected lets the fields show a short note instead of repeating the whole message.
+function notConnectedError(message) {
+  return Object.assign(new Error(message + ' ' + START_SERVER), { notConnected: true });
+}
+
+// Calls the release server. GET without a body, POST with one.
+// Returns the JSON answer, or throws an Error with a message a person can act on.
 async function api(url, body, signal) {
   const options = body === undefined ? { signal } : {
     method: 'POST',
@@ -12,22 +21,34 @@ async function api(url, body, signal) {
     body: JSON.stringify(body),
     signal,
   };
+
+  if (location.protocol === 'file:') {
+    throw notConnectedError('This page was opened as a file, so it can\'t reach the release server.');
+  }
+
   let res;
   try {
     res = await fetch(url, options);
   } catch (err) {
     if (err.name === 'AbortError') throw err;
-    throw Object.assign(new Error('Server unreachable'), { offline: true });
+    throw notConnectedError(`Can't reach the release server at ${location.origin}: it isn't running.`);
   }
-  const data = await res.json().catch(() => ({}));
-  if (!data.ok) throw new Error(data.message || 'HTTP ' + res.status);
+
+  // The release server always answers JSON with "ok". Anything else means this page was opened
+  // from a different server, e.g. VS Code's Live Server, which doesn't know the release server's API.
+  const data = await res.json().catch(() => null);
+  if (!data || typeof data.ok !== 'boolean') {
+    throw notConnectedError(`This page isn't connected to the release server: ${location.host} answered "${url}" with HTTP ${res.status}.`);
+  }
+  if (!data.ok) {
+    throw new Error(data.message || `The release server answered HTTP ${res.status} without saying why. Its terminal may show more.`);
+  }
   return data;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    FIELD STATES
    Plain fields: is-valid (green check) or has-error (red message).
-   The server-checked token field: vf-ok or vf-fail, see checkedField().
 ═══════════════════════════════════════════════════════════════════════════ */
 
 // A field with a value keeps its label floated above it.
@@ -178,142 +199,35 @@ $('version').addEventListener('input', () => {
 })();
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   SERVER-CHECKED FIELDS
-   Checked 600 ms after typing stops, and right away when the field is left.
-   While checking: spinner. Then a green badge, or a red message with a shake.
+   TOKEN — read by the server from server/.env
+   The page never sees the token. It only shows whether the server found one that works.
 ═══════════════════════════════════════════════════════════════════════════ */
+let tokenWorks = false;
 
-// request(value) returns { url, body } to send, or a message to show without asking the server.
-function checkedField(id, request, onOk = () => {}) {
-  const field = $('f-' + id), input = $(id), error = $('e-' + id);
-  const badge = $('badge-' + id), spinner = $('spinner-' + id);
-  let lastChecked = null, timer = null, controller = null;
-
-  function reset() {
-    field.classList.remove('vf-ok', 'vf-fail', 'vf-shake', 'has-error');
-    error.textContent = '';
-    spinner.classList.remove('active');
-    badge.classList.remove('show');
-    badge.classList.add('hide');
-    setTimeout(() => badge.classList.remove('hide'), 200);
-  }
-
-  function pass() {
-    spinner.classList.remove('active');
-    field.classList.add('vf-ok');
-    badge.classList.remove('hide');
-    badge.classList.add('show');
-  }
-
-  function fail(message) {
-    reset();
-    field.classList.add('vf-fail');
-    error.textContent = message;
-    void field.offsetWidth; // restarts the shake animation
-    field.classList.add('vf-shake');
-    setTimeout(() => field.classList.remove('vf-shake'), 450);
-  }
-
-  async function check(value) {
-    if (!value || value === lastChecked) return;
-    controller?.abort();
-    reset();
-    const req = request(value);
-    if (typeof req === 'string') {
-      lastChecked = null;
-      return fail(req);
-    }
-    lastChecked = value;
-    controller = new AbortController();
-    spinner.classList.add('active');
-    try {
-      const data = await api(req.url, req.body, controller.signal);
-      pass();
-      onOk(data);
-    } catch (err) {
-      if (err.name === 'AbortError') return;
-      if (err.offline) lastChecked = null; // try again next time
-      fail(err.message);
-    }
-  }
-
-  input.addEventListener('blur', () => {
-    clearTimeout(timer);
-    check(input.value.trim());
-  });
-  input.addEventListener('input', () => {
-    clearTimeout(timer);
-    const value = input.value.trim();
-    if (!value) {
-      controller?.abort();
-      reset();
-      lastChecked = null;
-      return;
-    }
-    timer = setTimeout(() => check(value), 600);
-  });
-
-  // Checks the current value again, e.g. after the token changed.
-  return { recheck() { lastChecked = null; check(input.value.trim()); } };
+// Shows the token status line: a green dot when the token works, a red one with the reason when not.
+function showTokenStatus(works, text) {
+  tokenWorks = works;
+  $('token-status').classList.remove('checking');
+  $('token-status').classList.toggle('bad', !works);
+  $('token-status-text').textContent = text;
+  $('token-recheck').hidden = works;
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   TOKEN — typed, or the one the server keeps in .env (never sent to the page)
-═══════════════════════════════════════════════════════════════════════════ */
-let usingSavedToken = false;
-let tokenCanBeSaved = false;
-
-// The token to send. Nothing when the server should use its saved one.
-function typedToken() {
-  return usingSavedToken ? undefined : $('token').value.trim();
-}
-
-function showTokenHint(text) {
-  $('h-token').textContent = text;
-}
-
-function showDefaultTokenHint() {
-  showTokenHint(tokenCanBeSaved ? 'Saved to .env once it is verified' : 'Create server/.env to remember the token');
-}
-
-// Swaps the token field for the "Using the token saved in .env" line, or back.
-function showSavedToken(on, text) {
-  usingSavedToken = on;
-  $('token-saved').hidden = !on;
-  $('f-token').hidden = on;
-  if (text) $('token-saved-text').textContent = text;
-  $('f-token').classList.toggle('vf-ok', on); // checkAll() looks at this
-}
-
-checkedField('token', token => ({ url: '/api/verify/token', body: { token } }), result => {
-  showTokenHint(result.saved ? 'Saved to .env' : '');
-});
-
-$('token-change').addEventListener('click', () => {
-  showSavedToken(false);
-  showDefaultTokenHint();
-  $('token').value = '';
-  setFilled($('token'));
-  $('token').focus();
-});
-
-// On load: use the saved token if the server has one that works.
-(async function useSavedToken() {
+async function checkToken() {
+  $('token-status').classList.add('checking');
+  $('token-status-text').textContent = 'Checking the Confluence token…';
   try {
-    const status = await api('/api/token');
-    tokenCanBeSaved = status.canSave;
-    showDefaultTokenHint();
-    if (!status.saved) return;
-    try {
-      const result = await api('/api/verify/token', {});
-      showSavedToken(true, 'Using the token saved in .env · ' + result.message);
-    } catch (err) {
-      showTokenHint(`The token in .env was rejected (${err.message}) — paste a new one`);
-    }
-  } catch {
-    // Server unreachable: the token field stays as it is.
+    const result = await api('/api/token');
+    showTokenStatus(true, 'Confluence token found in .env · ' + result.message);
+  } catch (err) {
+    // e.g. "No Confluence token found. Add the line CONFLUENCE_TOKEN=<your token> to C:\monorepo\release-page\server\.env"
+    showTokenStatus(false, err.message);
   }
-})();
+}
+
+// After adding the token to .env, "Check again" picks it up. No restart needed.
+$('token-recheck').addEventListener('click', checkToken);
+checkToken();
 
 /* ═══════════════════════════════════════════════════════════════════════════
    APP → TAGS
@@ -330,7 +244,8 @@ async function loadApps() {
     fillSelect(appSelect, apps, apps.length ? '— Select app —' : 'No apps found');
   } catch (err) {
     fillSelect(appSelect, [], 'Could not load apps');
-    showError('app', err.message);
+    // The token line above already explains a missing connection in full.
+    showError('app', err.notConnected ? 'Could not load the apps: the page isn\'t connected to the release server (see above).' : err.message);
   }
 }
 
@@ -341,7 +256,7 @@ async function loadTags(app) {
   }
   if (!app) return;
   try {
-    const { tags } = await api(`/api/apps/${encodeURIComponent(app)}/tags`);
+    const { tags } = await api(`/api/tags?app=${encodeURIComponent(app)}`);
     if (!tags.length) return showError('app', `No ${app}-<n>-OLD / -NEW tags found`);
     showValid('app');
     // Tags come highest number first, so the newest OLD/NEW pair is picked by default.
@@ -375,9 +290,9 @@ function checkAll() {
   for (const [id, message] of selects) {
     if (!$(id).value) { showError(id, message); ok = false; }
   }
-  if (!$('f-token').classList.contains('vf-ok')) {
-    $('f-token').classList.add('vf-fail');
-    $('e-token').textContent ||= 'Verify the token first';
+  if (!tokenWorks) {
+    $('token-status').classList.add('shake');
+    setTimeout(() => $('token-status').classList.remove('shake'), 450);
     ok = false;
   }
   return ok;
@@ -388,7 +303,6 @@ $('mainForm').addEventListener('submit', async event => {
   if (!checkAll()) return;
 
   const release = {
-    token: typedToken(),
     app: appSelect.value,
     version: $('version').value.trim(),
     date: $('eventdate').value.trim(),
