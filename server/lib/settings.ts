@@ -6,7 +6,6 @@ import path from 'node:path';
 export interface Config {
   port: number;
   appPattern: string;
-  repoRoot: string;
   confluenceBaseUrl: string;
   confluenceEmail: string;
   parentPageIds: Record<string, string>;

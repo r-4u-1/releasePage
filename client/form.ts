@@ -17,12 +17,13 @@ function notConnectedError(message: string): ApiError {
 
 // What the release server answers. Every answer has "ok"; a failed one has a "message".
 interface TokenAnswer { message: string }
+interface FolderAnswer { folder: string }
 interface AppsAnswer { apps: string[] }
 interface TagsAnswer { tags: string[] }
 interface ReleaseAnswer { pageUrl: string; pullRequestCount: number }
 
 // What the form sends to POST /api/release.
-interface ReleaseRequest { app: string; version: string; date: string; from: string; to: string }
+interface ReleaseRequest { repo: string; app: string; version: string; date: string; from: string; to: string }
 
 // Calls the release server. GET without a body, POST with one.
 // Returns the JSON answer, or throws an Error with a message a person can act on.
@@ -216,6 +217,33 @@ const dateInput = $<HTMLInputElement>('eventdate');
 })();
 
 /* ═══════════════════════════════════════════════════════════════════════════
+   MONOREPO — the absolute path to it. Leaving the field asks the server whether it's a folder in a git repo.
+   The repo's root (repo) is sent with every later request, and the browser remembers it for next time.
+═══════════════════════════════════════════════════════════════════════════ */
+const repoInput = $<HTMLInputElement>('repo');
+let repo = '';
+
+async function checkRepoFolder() {
+  const folder = repoInput.value.trim();
+  if (folder && folder === repo) return;
+  repo = '';
+  fillSelect(appSelect, [], 'Enter the monorepo path first');
+  loadTags('');
+  if (!folder) return showNeutral('repo');
+  try {
+    repo = (await api<FolderAnswer>('/api/folder?path=' + encodeURIComponent(folder))).folder;
+    repoInput.value = repo; // e.g. C:\git\monorepo\web-app becomes C:\git\monorepo
+    localStorage.setItem('repo', repo);
+    showValid('repo');
+    loadApps();
+  } catch (err) {
+    showError('repo', (err as ApiError).message);
+  }
+}
+
+repoInput.addEventListener('blur', checkRepoFolder);
+
+/* ═══════════════════════════════════════════════════════════════════════════
    TOKEN — read by the server from server/.env
    The page never sees the token. It only shows whether the server found one that works.
 ═══════════════════════════════════════════════════════════════════════════ */
@@ -257,7 +285,7 @@ function fillSelect(select: HTMLSelectElement, values: string[], placeholder: st
 
 async function loadApps() {
   try {
-    const { apps } = await api<AppsAnswer>('/api/apps');
+    const { apps } = await api<AppsAnswer>(`/api/apps?repo=${encodeURIComponent(repo)}`);
     fillSelect(appSelect, apps, apps.length ? '— Select app —' : 'No apps found');
   } catch (err) {
     const error = err as ApiError;
@@ -274,7 +302,7 @@ async function loadTags(app: string) {
   }
   if (!app) return;
   try {
-    const { tags } = await api<TagsAnswer>(`/api/tags?app=${encodeURIComponent(app)}`);
+    const { tags } = await api<TagsAnswer>(`/api/tags?repo=${encodeURIComponent(repo)}&app=${encodeURIComponent(app)}`);
     if (!tags.length) return showError('app', `No ${app}-<n>-OLD / -NEW tags found`);
     showValid('app');
     // Tags come highest number first, so the newest OLD/NEW pair is picked by default.
@@ -291,7 +319,11 @@ async function loadTags(app: string) {
 }
 
 appSelect.addEventListener('change', () => loadTags(appSelect.value));
-loadApps();
+
+// The monorepo path from last time, checked again. The apps load once it checks out.
+repoInput.value = localStorage.getItem('repo') ?? '';
+setFilled(repoInput);
+checkRepoFolder();
 
 /* ═══════════════════════════════════════════════════════════════════════════
    CREATE PAGE — the server creates the Confluence page from these values
@@ -300,6 +332,10 @@ loadApps();
 // Marks every missing or unchecked field. True when everything is ready.
 function checkAll() {
   let ok = checkVersion();
+  if (!repo) {
+    if (!repoInput.value.trim()) showError('repo', 'Enter the absolute path to the monorepo');
+    ok = false;
+  }
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateInput.value.trim())) {
     showError('eventdate', 'Date is required (YYYY-MM-DD)');
     ok = false;
@@ -323,6 +359,7 @@ $<HTMLFormElement>('mainForm').addEventListener('submit', async event => {
   if (!checkAll()) return;
 
   const release: ReleaseRequest = {
+    repo,
     app: appSelect.value,
     version: versionInput.value.trim(),
     date: dateInput.value.trim(),

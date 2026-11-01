@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { config, SERVER_DIR } from './settings.ts';
-import { fail, escapeForRegExp } from './helpers.ts';
+import { fail, escapeForRegExp, HttpError } from './helpers.ts';
 
 // One merged PR on the release page.
 export interface PullRequest {
@@ -30,13 +30,28 @@ function runGit(args: string[], folder: string): string {
   }
 }
 
-// The monorepo root: from config.json (relative to the server folder), or else the git repo this tool is inside.
-const REPO_ROOT = config.repoRoot
-  ? path.resolve(SERVER_DIR, config.repoRoot)
-  : runGit(['rev-parse', '--show-toplevel'], SERVER_DIR).trim();
+// The monorepo's root folder, from the absolute path typed in the form. Fails if it isn't a folder in a git repo.
+// A folder inside the monorepo works too: C:\git\monorepo\web-app → C:\git\monorepo.
+export function findRepo(folder: string): string {
+  if (!path.isAbsolute(folder)) {
+    fail(400, 'Enter the absolute path to the monorepo, e.g. C:\\git\\monorepo or /home/you/monorepo.');
+  }
+  if (!fs.statSync(folder, { throwIfNoEntry: false })?.isDirectory()) {
+    fail(404, `There's no folder ${folder}.`);
+  }
+  try {
+    return path.resolve(runGit(['rev-parse', '--show-toplevel'], folder).trim());
+  } catch (error) {
+    if (error instanceof HttpError && error.message.startsWith('Git isn\'t installed')) throw error;
+    fail(400, `${folder} isn't in a git repository.`);
+  }
+}
 
-// The top-level folder this tool lives in, e.g. "release-page". It's never listed as an app.
-const OWN_FOLDER = path.relative(REPO_ROOT, SERVER_DIR).split(path.sep)[0];
+// The top-level folder of the repo this tool lives in, e.g. "release-page". It's never listed as an app.
+// Doesn't matter when the tool lives outside the monorepo.
+function ownFolder(repo: string): string {
+  return path.relative(repo, SERVER_DIR).split(path.sep)[0];
+}
 
 // appPattern as a regular expression. Only * is special and means "anything":
 //   "*-app"  →  /^.*-app$/   matches "web-app" and "admin-app", but not "docs"
@@ -46,22 +61,22 @@ const APP_NAME_PATTERN = new RegExp(
 
 // The app names: top-level folders of the monorepo that match appPattern.
 // Only matters for broad patterns like "*": hidden folders, node_modules and this tool's own folder are left out.
-export function listApps(): string[] {
-  const folders = fs.readdirSync(REPO_ROOT, { withFileTypes: true })
+export function listApps(repo: string): string[] {
+  const folders = fs.readdirSync(repo, { withFileTypes: true })
     .filter(entry => entry.isDirectory())
     .map(entry => entry.name);
 
   return folders
     .filter(name => APP_NAME_PATTERN.test(name))
-    .filter(name => !name.startsWith('.') && name !== 'node_modules' && name !== OWN_FOLDER)
+    .filter(name => !name.startsWith('.') && name !== 'node_modules' && name !== ownFolder(repo))
     .sort();
 }
 
 // The app's release tags, highest number first, e.g.
 //   web-app-12-NEW, web-app-12-OLD, web-app-11-NEW, ...
 // Unknown app names are refused here, so they never reach git.
-export function listTags(app: string): string[] {
-  if (!listApps().includes(app)) {
+export function listTags(repo: string, app: string): string[] {
+  if (!listApps(repo).includes(app)) {
     fail(404, `Unknown app "${app}"`);
   }
 
@@ -69,7 +84,7 @@ export function listTags(app: string): string[] {
   const tagPattern = new RegExp(`^${escapeForRegExp(app)}-(\\d+)-(OLD|NEW)$`);
   const tagNumber = (tag: string) => Number(tagPattern.exec(tag)![1]); // only called on tags that match
 
-  const allTags = runGit(['tag', '--list', `${app}-*`], path.join(REPO_ROOT, app))
+  const allTags = runGit(['tag', '--list', `${app}-*`], path.join(repo, app))
     .split('\n')
     .map(tag => tag.trim());
 
@@ -85,7 +100,7 @@ const FIELD_SEPARATOR = '\x1f';
 // The PRs merged into the app between the two tags, newest first:
 //   [{ title: 'Add keyboard navigation', author: 'Alice' }, ...]
 // A merged PR is a commit whose message contains "Merged PR", e.g. "Merged PR 1234: Add keyboard navigation".
-export function listMergedPullRequests(app: string, fromTag: string, toTag: string): PullRequest[] {
+export function listMergedPullRequests(repo: string, app: string, fromTag: string, toTag: string): PullRequest[] {
   const output = runGit([
     'log',
     '--first-parent',                  // only the commits made on the main line, not the commits inside each PR
@@ -94,7 +109,7 @@ export function listMergedPullRequests(app: string, fromTag: string, toTag: stri
     `${fromTag}..${toTag}`,            // everything after fromTag, up to and including toTag
     '--',
     '.',                               // only commits that changed this app's folder (git runs inside it)
-  ], path.join(REPO_ROOT, app));
+  ], path.join(repo, app));
 
   const commits = output.split('\n').filter(Boolean).map(line => {
     const [hash, parents, mergedBy, subject] = line.split(FIELD_SEPARATOR);
@@ -109,7 +124,7 @@ export function listMergedPullRequests(app: string, fromTag: string, toTag: stri
     };
   });
 
-  const authors = authorsOfCommits(commits.map(commit => commit.prBranchTip).filter(hash => hash !== undefined));
+  const authors = authorsOfCommits(repo, commits.map(commit => commit.prBranchTip).filter(hash => hash !== undefined));
 
   // The person who opened the PR: the author of the PR branch's last commit.
   // For a squashed PR there's no branch left, so it's the author of the squashed commit.
@@ -120,10 +135,10 @@ export function listMergedPullRequests(app: string, fromTag: string, toTag: stri
 }
 
 // The author of each commit, in one git call: { '<hash>': 'Alice', ... }
-function authorsOfCommits(hashes: string[]): Record<string, string> {
+function authorsOfCommits(repo: string, hashes: string[]): Record<string, string> {
   if (hashes.length === 0) return {};
 
-  const output = runGit(['show', '--no-patch', '--format=%H%x1f%an', ...hashes], REPO_ROOT);
+  const output = runGit(['show', '--no-patch', '--format=%H%x1f%an', ...hashes], repo);
   const authors: Record<string, string> = {};
   for (const line of output.split('\n').filter(Boolean)) {
     const [hash, author] = line.split(FIELD_SEPARATOR);

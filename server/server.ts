@@ -10,10 +10,13 @@
 //        - opens the new page in the browser.
 //
 // The API:
-//   GET  /api/token            is there a working token in server/.env?
-//   GET  /api/apps             the app names
-//   GET  /api/tags?app=web-app the app's OLD / NEW tags
-//   POST /api/release          create the release page
+//   GET  /api/folder?path=…            is this absolute path a folder in a git repo? Returns the repo's root
+//   GET  /api/token                    is there a working token in server/.env?
+//   GET  /api/apps?repo=…              the app names in that repo
+//   GET  /api/tags?repo=…&app=web-app  the app's OLD / NEW tags
+//   POST /api/release                  create the release page
+//
+// The form sends the monorepo's root folder (from /api/folder) with every request, and git runs there.
 //
 // This file shows what each of those does, and handleRequest() at the bottom picks one by its path. The details live in lib/:
 //   settings.ts              config.json, the port, the paths and Confluence's address
@@ -38,6 +41,16 @@ import { openInBrowser } from './lib/browser.ts';
 import * as web from './lib/web.ts';
 
 // ═══════════════════════════════════════════════════════════════════════════
+// GET /api/folder?path=C:\git\monorepo
+// Is this absolute path a folder in a git repo? The form checks the monorepo's path with it.
+// Returns the repo's root, e.g. { folder: 'C:\\git\\monorepo' }, which the form sends with every later request.
+// ═══════════════════════════════════════════════════════════════════════════
+
+function checkFolder(folder: string): { folder: string } {
+  return { folder: git.findRepo(folder) };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // GET /api/token
 // Is there a working token in server/.env? Never sends the token itself.
 // ═══════════════════════════════════════════════════════════════════════════
@@ -49,26 +62,26 @@ async function checkToken(): Promise<{ message: string }> {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// GET /api/apps
+// GET /api/apps?repo=C:\git\monorepo
 // The app names, e.g. { apps: ['admin-app', 'web-app'] }
 // ═══════════════════════════════════════════════════════════════════════════
 
-function listApps(): { apps: string[] } {
-  return { apps: git.listApps() };
+function listApps(repo: string): { apps: string[] } {
+  return { apps: git.listApps(git.findRepo(repo)) };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// GET /api/tags?app=web-app
+// GET /api/tags?repo=C:\git\monorepo&app=web-app
 // The app's OLD / NEW tags, newest first, e.g. { tags: ['web-app-12-NEW', 'web-app-12-OLD', ...] }
 // ═══════════════════════════════════════════════════════════════════════════
 
-function listTags(app: string): { tags: string[] } {
-  return { tags: git.listTags(app) };
+function listTags(repo: string, app: string): { tags: string[] } {
+  return { tags: git.listTags(git.findRepo(repo), app) };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // POST /api/release
-// Body: { app, from, to, version, date }
+// Body: { repo, app, from, to, version, date }
 // Checks the form, reads the merged PRs, creates the release page and opens it.
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -76,6 +89,7 @@ async function createRelease(body: Record<string, unknown>): Promise<{ pageUrl: 
   const token = requireToken();
 
   // 1. Check what the form sent.
+  const repo = git.findRepo(textValue(body.repo));
   const app = textValue(body.app);
   const from = textValue(body.from);
   const to = textValue(body.to);
@@ -89,7 +103,7 @@ async function createRelease(body: Record<string, unknown>): Promise<{ pageUrl: 
     fail(400, 'Enter the release date as YYYY-MM-DD, e.g. 2026-10-30.');
   }
 
-  const appTags = git.listTags(app); // also refuses unknown apps
+  const appTags = git.listTags(repo, app); // also refuses unknown apps
   if (!appTags.includes(from) || !appTags.includes(to)) {
     fail(400, `"${from}" and "${to}" aren't both tags of ${app}. Pick the app again to reload its tags.`);
   }
@@ -100,7 +114,7 @@ async function createRelease(body: Record<string, unknown>): Promise<{ pageUrl: 
   }
 
   // 2. Read the merged PRs between the two tags.
-  const pullRequests = git.listMergedPullRequests(app, from, to);
+  const pullRequests = git.listMergedPullRequests(repo, app, from, to);
   if (pullRequests.length === 0) {
     fail(400, `No merged PRs in ${app} between ${from} and ${to}: no commit there has "Merged PR" in its message `
       + `and changes the ${app} folder. Check that "From tag" is the older tag and "To tag" the newer one.`);
@@ -142,12 +156,14 @@ async function handleRequest(request: http.IncomingMessage, response: http.Serve
 
     // Everything else is the API.
     let answer: object;
-    if (method === 'GET' && pathname === '/api/token') {
+    if (method === 'GET' && pathname === '/api/folder') {
+      answer = checkFolder(searchParams.get('path') ?? '');
+    } else if (method === 'GET' && pathname === '/api/token') {
       answer = await checkToken();
     } else if (method === 'GET' && pathname === '/api/apps') {
-      answer = listApps();
+      answer = listApps(searchParams.get('repo') ?? '');
     } else if (method === 'GET' && pathname === '/api/tags') {
-      answer = listTags(searchParams.get('app') ?? '');
+      answer = listTags(searchParams.get('repo') ?? '', searchParams.get('app') ?? '');
     } else if (method === 'POST' && pathname === '/api/release') {
       answer = await createRelease(await web.readJsonBody(request));
     } else {

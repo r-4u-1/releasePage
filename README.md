@@ -42,16 +42,13 @@ You pick an app, two git tags, a version and a release date. The server:
 
 Requirements: **Node.js 22.18 or newer** (or 23.6+) and **git**. Nothing to install: the code is TypeScript, and Node runs it as it is by removing the types. The server only uses Node's built-in modules, so there's no `package.json` and no `node_modules`.
 
-**1. Put the tool in the monorepo.** The server lists the monorepo's top-level folders as apps:
+**1. Put the tool anywhere.** It doesn't need to be inside the monorepo: you enter the monorepo's absolute path in the form, and the server lists its top-level folders as apps:
 
 ```
 monorepo/
 ├── web-app/             ← listed (matches *-app)
 ├── admin-app/           ← listed
-├── docs/                ← not listed
-└── release-page/        ← this tool (not listed)
-    ├── public/
-    └── server/
+└── docs/                ← not listed
 ```
 
 **2. Set the Confluence address.** In [`server/config.json`](server/config.json), replace the example `confluenceBaseUrl` with yours. Use `https://`, so the token is encrypted on its way.
@@ -80,7 +77,12 @@ node server.ts
 
 ## Walking through the form
 
-### 1. Confluence token
+### 1. Absolute path to monorepo
+The full path to the monorepo's folder, e.g. `C:\git\monorepo`. When you leave the field, the server checks that it's a folder in a git repository. The field then turns green and shows the repo's root folder (a folder inside the monorepo, e.g. `C:\git\monorepo\web-app`, becomes `C:\git\monorepo`), and the apps load. Otherwise it shows **There's no folder …**, **… isn't in a git repository** or **Enter the absolute path to the monorepo**.
+
+All git commands run in that folder. The browser remembers it, so it's filled in and checked again next time.
+
+### 2. Confluence token
 There's no token field. At the top of the form you see whether the server found a working token in `server/.env`:
 
 - **● Confluence token found in .env · Authenticated as &lt;you&gt;** (green): ready.
@@ -89,16 +91,16 @@ There's no token field. At the top of the form you see whether the server found 
 
 **Create page** doesn't run until the token works.
 
-### 2. App
-A list of the top-level folders in the monorepo. Picking an app loads its git tags into **From tag** and **To tag**.
+### 3. App
+A list of the top-level folders in the monorepo, loaded once the path checks out. Picking an app loads its git tags into **From tag** and **To tag**.
 
-### 3. Version and Date
+### 4. Version and Date
 Shown on the page; the date is also in the page title. You can type the date as numbers (dashes are added for you) or pick it from the calendar.
 
-### 4. From tag (OLD) and To tag (NEW)
+### 5. From tag (OLD) and To tag (NEW)
 Filled with the app's tags. The newest `OLD` / `NEW` pair is picked for you.
 
-### 5. Create page
+### 6. Create page
 Creates the release page and opens it in your browser. Under the button you see how many PRs it lists, and an **open in Confluence** link. If something goes wrong, the reason is shown instead.
 
 ---
@@ -187,7 +189,6 @@ Everything is in [`server/config.json`](server/config.json).
 |---|---|
 | `port` | Port the server listens on. The `PORT` environment variable overrides it. |
 | `appPattern` | Which top-level folders are apps, e.g. `*-app`. `*` matches anything. |
-| `repoRoot` | Monorepo root, relative to the `server` folder. Empty means "the git repo this tool is inside". |
 | `confluenceBaseUrl` | Confluence address. Cloud: `https://<site>.atlassian.net/wiki`. |
 | `confluenceEmail` | Empty for Data Center (the token is sent as `Bearer`). For Cloud, the Atlassian account email that owns the API token. |
 | `parentPageIds` | For each app, the ID of the Confluence page its release pages are created under. |
@@ -233,10 +234,11 @@ All answers are JSON with `ok: true/false`. Errors come with a `message` and a m
 
 | Method | Path | Does |
 |---|---|---|
+| `GET` | `/api/folder?path=…` | Checks that the absolute path is a folder in a git repository. Returns `folder`: the repo's root, which the form sends with every later request. |
 | `GET` | `/api/token` | Checks the token in `server/.env` with Confluence. Returns `message` ("Authenticated as …"), or an error saying the token is missing or rejected. Never returns the token. |
-| `GET` | `/api/apps` | The app names. |
-| `GET` | `/api/tags?app=…` | The app's `OLD` / `NEW` tag names, highest number first. |
-| `POST` | `/api/release` | `{ app, from, to, version, date }`: creates the release page, opens it, and returns `pageUrl` and `pullRequestCount`. |
+| `GET` | `/api/apps?repo=…` | The app names in that repo. |
+| `GET` | `/api/tags?repo=…&app=…` | The app's `OLD` / `NEW` tag names, highest number first. |
+| `POST` | `/api/release` | `{ repo, app, from, to, version, date }`: creates the release page, opens it, and returns `pageUrl` and `pullRequestCount`. |
 
 ---
 
@@ -257,7 +259,7 @@ All answers are JSON with `ok: true/false`. Errors come with a `message` and a m
 | **There's no Confluence page with ID …** | The ID in `parentPageIds` is wrong, or your account can't see that page. |
 | **No merged PRs in &lt;app&gt; between …** | No commit between the tags has `Merged PR` in its message and changes the app's folder. Check that **From tag** is the older tag and **To tag** the newer one. |
 | **Confluence said: A page with this title already exists** | A release page for this app and date already exists in the space. Rename or delete it in Confluence. |
-| App list says **No apps found** | No top-level folder matches `appPattern`. Check the folder names, or `repoRoot` in `config.json`. |
+| App list says **No apps found** | No top-level folder matches `appPattern`. Check the folder names, and the path to the monorepo. |
 | **No app-x-&lt;n&gt;-OLD / -NEW tags found** | The app has no tags named like `app-x-12-OLD`. Fetch them with `git fetch --tags`. |
 | **This server only answers its own page** | Open the page as `http://localhost:3000/` or `http://127.0.0.1:3000/`. |
 | **Git isn't installed, or isn't on the PATH** | Install git, then restart the server. |

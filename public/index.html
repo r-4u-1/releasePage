@@ -126,6 +126,13 @@
       <form id="mainForm" novalidate>
         <div class="form-grid">
 
+          <!-- MONOREPO — absolute path; the server checks the folder exists when you leave the field -->
+          <div class="field full-width" id="f-repo">
+            <label for="repo">Absolute path to monorepo</label>
+            <input type="text" id="repo" name="repo" autocomplete="off" spellcheck="false"/>
+            <span class="err-msg" id="e-repo"></span>
+          </div>
+
           <!-- TOKEN — the server reads it from server/.env; the page only shows the status -->
           <div class="token-status checking" id="token-status" role="status" aria-live="polite">
             <span class="token-status-dot" aria-hidden="true"></span>
@@ -136,7 +143,7 @@
           <!-- APP — top-level folder in the monorepo -->
           <div class="field full-width" id="f-app">
             <label for="app">App</label>
-            <select id="app" name="app"><option value="">Loading apps…</option></select>
+            <select id="app" name="app"><option value="">Enter the monorepo path first</option></select>
             <span class="err-msg" id="e-app"></span>
           </div>
 
