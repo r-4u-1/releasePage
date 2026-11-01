@@ -1,6 +1,7 @@
 // The Confluence token, read from server/.env:  CONFLUENCE_TOKEN=<your token>
 import fs from 'node:fs';
 import { ENV_FILE } from './settings.ts';
+import { fail } from './helpers.ts';
 
 // The token line in .env, e.g.  CONFLUENCE_TOKEN=abc123  or  CONFLUENCE_TOKEN="abc123"
 // The token itself (without quotes) is captured as group 1.
@@ -23,7 +24,7 @@ function readToken(): string {
 export function requireToken(): string {
   const token = readToken();
   if (!token) {
-    throw new Error(`No Confluence token found. Add the line CONFLUENCE_TOKEN=<your token> to ${ENV_FILE}`);
+    fail(400, `No Confluence token found. Add the line CONFLUENCE_TOKEN=<your token> to ${ENV_FILE}`);
   }
   return token;
 }

@@ -1,4 +1,4 @@
-# Release page creator · v-5
+# Release page creator · v-6
 
 A small local web app that creates the **Confluence release page** for one app in the monorepo.
 
@@ -78,7 +78,7 @@ node server.ts
 ## Walking through the form
 
 ### 1. Absolute path to monorepo
-The full path to the monorepo's folder, e.g. `C:\git\monorepo`. When you leave the field, the server asks git for the repo's root folder. The field then turns green and shows it (a folder inside the monorepo, e.g. `C:\git\monorepo\web-app`, becomes `C:\git\monorepo`), and the apps load. Otherwise it shows git's error.
+The full path to the monorepo's folder, e.g. `C:\git\monorepo`. When you leave the field, the server checks that it's a folder in a git repository. The field then turns green and shows the repo's root folder (a folder inside the monorepo, e.g. `C:\git\monorepo\web-app`, becomes `C:\git\monorepo`), and the apps load. Otherwise it shows **There's no folder …**, **… isn't in a git repository** or **Enter the absolute path to the monorepo**.
 
 All git commands run in that folder. The browser remembers it, so it's filled in and checked again next time.
 
@@ -211,6 +211,7 @@ server/
 ├── server.ts           What each API path does, and which path runs what
 ├── lib/                The details server.ts uses
 │   ├── settings.ts     config.json, the port, the paths and Confluence's address
+│   ├── helpers.ts      fail() and other small helpers
 │   ├── git.ts          Apps, tags and merged PRs
 │   ├── token.ts        Reads the token from .env
 │   ├── confluence.ts   Checks the token, creates the page
@@ -226,11 +227,11 @@ server/
 
 ## API
 
-All answers are JSON with `ok: true/false`. Errors come with a `message` and HTTP status 500.
+All answers are JSON with `ok: true/false`. Errors come with a `message` and a matching HTTP status.
 
 | Method | Path | Does |
 |---|---|---|
-| `GET` | `/api/folder?path=…` | Asks git for the repository's root folder. Returns `folder`: the repo's root, which the form sends with every later request. |
+| `GET` | `/api/folder?path=…` | Checks that the absolute path is a folder in a git repository. Returns `folder`: the repo's root, which the form sends with every later request. |
 | `GET` | `/api/token` | Checks the token in `server/.env` with Confluence. Returns `message` ("Authenticated as …"), or an error saying the token is missing or rejected. Never returns the token. |
 | `GET` | `/api/apps?repo=…` | The app names in that repo. |
 | `GET` | `/api/tags?repo=…&app=…` | The app's `OLD` / `NEW` tag names, highest number first. |
@@ -247,3 +248,4 @@ All answers are JSON with `ok: true/false`. Errors come with a `message` and HTT
 | v-3 | A monorepo path field, and lists of apps and tags to pick from. The server is split into `lib/`. First styles. |
 | v-4 | The real PR author, isVerified and Note columns plus an info box for some apps, the token status line, and the new page opens by itself. |
 | v-5 | Every feature of the final app: TypeScript form, field checks, calendar, intro animations, Confluence Cloud. Few safety checks. |
+| v-6 | Safe input: git runs without a shell, every value is checked, HTML is escaped, requests are size-limited, internal errors stay in the terminal. |

@@ -4,6 +4,7 @@ import path from 'node:path';
 import { stripTypeScriptTypes } from 'node:module';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { PUBLIC_DIR, CLIENT_DIR } from './settings.ts';
+import { fail } from './helpers.ts';
 
 const CONTENT_TYPES: Record<string, string> = {
   '.html': 'text/html; charset=utf-8',
@@ -35,9 +36,27 @@ export function sendJson(response: ServerResponse, status: number, data: object)
   response.end(JSON.stringify(data));
 }
 
-// Reads the JSON object the form sent.
-export async function readJsonBody(request: IncomingMessage): Promise<Record<string, any>> {
+// Reads the JSON object the form sent. At most 100 KB.
+export async function readJsonBody(request: IncomingMessage): Promise<Record<string, unknown>> {
+  const contentType = request.headers['content-type'] || '';
+  if (!contentType.startsWith('application/json')) {
+    fail(415, 'Requests to the release server must be sent as JSON.');
+  }
+
   let text = '';
-  for await (const chunk of request) text += chunk;
-  return JSON.parse(text);
+  for await (const chunk of request) {
+    text += chunk;
+    if (text.length > 100_000) fail(413, 'The request is too large (over 100 KB).');
+  }
+
+  let body: unknown;
+  try {
+    body = text ? JSON.parse(text) : {};
+  } catch {
+    fail(400, 'The request isn\'t valid JSON.');
+  }
+  if (typeof body !== 'object' || body === null || Array.isArray(body)) {
+    fail(400, 'The request must be a JSON object, e.g. { "app": "web-app", ... }.');
+  }
+  return body as Record<string, unknown>;
 }

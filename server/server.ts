@@ -10,7 +10,7 @@
 //        - opens the new page in the browser.
 //
 // The API:
-//   GET  /api/folder?path=…            is this path a folder in a git repo? Returns the repo's root
+//   GET  /api/folder?path=…            is this absolute path a folder in a git repo? Returns the repo's root
 //   GET  /api/token                    is there a working token in server/.env?
 //   GET  /api/apps?repo=…              the app names in that repo
 //   GET  /api/tags?repo=…&app=web-app  the app's OLD / NEW tags
@@ -20,6 +20,7 @@
 //
 // This file shows what each of those does, and handleRequest() at the bottom picks one by its path. The details live in lib/:
 //   settings.ts              config.json, the port, the paths and Confluence's address
+//   helpers.ts               fail() and other small helpers
 //   git.ts                   apps, tags and merged PRs
 //   token.ts                 the Confluence token from server/.env
 //   confluence.ts            Confluence's REST API: checking the token, creating a page
@@ -31,6 +32,7 @@
 
 import http from 'node:http';
 import { config, PORT, CONFLUENCE_URL } from './lib/settings.ts';
+import { fail, textValue, HttpError } from './lib/helpers.ts';
 import * as git from './lib/git.ts';
 import { requireToken } from './lib/token.ts';
 import * as confluence from './lib/confluence.ts';
@@ -40,7 +42,7 @@ import * as web from './lib/web.ts';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // GET /api/folder?path=C:\git\monorepo
-// Is this path a folder in a git repo? The form checks the monorepo's path with it.
+// Is this absolute path a folder in a git repo? The form checks the monorepo's path with it.
 // Returns the repo's root, e.g. { folder: 'C:\\git\\monorepo' }, which the form sends with every later request.
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -65,7 +67,7 @@ async function checkToken(): Promise<{ message: string }> {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function listApps(repo: string): { apps: string[] } {
-  return { apps: git.listApps(repo) };
+  return { apps: git.listApps(git.findRepo(repo)) };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -74,30 +76,58 @@ function listApps(repo: string): { apps: string[] } {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function listTags(repo: string, app: string): { tags: string[] } {
-  return { tags: git.listTags(repo, app) };
+  return { tags: git.listTags(git.findRepo(repo), app) };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // POST /api/release
 // Body: { repo, app, from, to, version, date }
-// Reads the merged PRs, creates the release page and opens it.
+// Checks the form, reads the merged PRs, creates the release page and opens it.
 // ═══════════════════════════════════════════════════════════════════════════
 
-async function createRelease(body: Record<string, any>): Promise<{ pageUrl: string; pullRequestCount: number }> {
+async function createRelease(body: Record<string, unknown>): Promise<{ pageUrl: string; pullRequestCount: number }> {
   const token = requireToken();
-  const { repo, app, from, to, version, date } = body;
 
-  // 1. Read the merged PRs between the two tags.
+  // 1. Check what the form sent.
+  const repo = git.findRepo(textValue(body.repo));
+  const app = textValue(body.app);
+  const from = textValue(body.from);
+  const to = textValue(body.to);
+  const version = textValue(body.version);
+  const date = textValue(body.date);
+
+  if (!version || version.length > 50) {
+    fail(400, 'Enter a version, e.g. 1.4.0 (at most 50 characters).');
+  }
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) { // YYYY-MM-DD
+    fail(400, 'Enter the release date as YYYY-MM-DD, e.g. 2026-10-30.');
+  }
+
+  const appTags = git.listTags(repo, app); // also refuses unknown apps
+  if (!appTags.includes(from) || !appTags.includes(to)) {
+    fail(400, `"${from}" and "${to}" aren't both tags of ${app}. Pick the app again to reload its tags.`);
+  }
+
+  const parentPageId = config.parentPageIds[app];
+  if (!parentPageId) {
+    fail(400, `${app} has no parent page yet. Add "${app}": "<page ID>" to "parentPageIds" in server/config.json.`);
+  }
+
+  // 2. Read the merged PRs between the two tags.
   const pullRequests = git.listMergedPullRequests(repo, app, from, to);
+  if (pullRequests.length === 0) {
+    fail(400, `No merged PRs in ${app} between ${from} and ${to}: no commit there has "Merged PR" in its message `
+      + `and changes the ${app} folder. Check that "From tag" is the older tag and "To tag" the newer one.`);
+  }
 
-  // 2. Create the page in Confluence.
+  // 3. Create the page in Confluence.
   const pageUrl = await confluence.createConfluencePage(token, {
     title: `Rel of ${app} - ${date}`,
-    parentPageId: config.parentPageIds[app],
+    parentPageId,
     content: releasePageContent({ app, version, date, from, to, pullRequests }),
   });
 
-  // 3. Open it.
+  // 4. Open it.
   console.log(`[release] created ${pageUrl} with ${pullRequests.length} PRs`);
   openInBrowser(pageUrl);
   return { pageUrl, pullRequestCount: pullRequests.length };
@@ -128,14 +158,20 @@ async function handleRequest(request: http.IncomingMessage, response: http.Serve
       web.sendPublicFile(response, pathname);
       return;
     } else {
-      web.sendJson(response, 404, { ok: false, message: `The release server has no "${method} ${pathname}".` });
-      return;
+      fail(404, `The release server has no "${method} ${pathname}".`);
     }
 
     web.sendJson(response, 200, { ok: true, ...answer });
   } catch (error) {
-    console.error('[server]', error instanceof Error ? error.message : error);
-    web.sendJson(response, 500, { ok: false, message: error instanceof Error ? error.message : String(error) });
+    // Our own errors (from fail) have a status. Anything else is unexpected.
+    const status = error instanceof HttpError ? error.status : 500;
+    if (status >= 500) console.error('[server]', error instanceof Error ? error.message : error);
+
+    // Unexpected errors may contain internals, so the form only gets a pointer to the terminal.
+    const message = error instanceof HttpError
+      ? error.message
+      : 'Something went wrong in the release server. The terminal it runs in shows the details.';
+    web.sendJson(response, status, { ok: false, message });
   }
 }
 

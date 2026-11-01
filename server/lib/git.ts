@@ -1,8 +1,9 @@
 // Git: the apps (top-level folders), their release tags, and the PRs merged between two tags.
 import fs from 'node:fs';
 import path from 'node:path';
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { config } from './settings.ts';
+import { fail, escapeForRegExp, HttpError } from './helpers.ts';
 
 // One merged PR on the release page.
 export interface PullRequest {
@@ -11,37 +12,77 @@ export interface PullRequest {
 }
 
 // Runs a git command in the given folder and returns what it printed.
-function runGit(command: string, folder: string): string {
-  return execSync(`git ${command}`, { cwd: folder, encoding: 'utf8', maxBuffer: 32 * 1024 * 1024 });
+function runGit(args: string[], folder: string): string {
+  try {
+    return execFileSync('git', args, {
+      cwd: folder,
+      encoding: 'utf8',
+      stdio: 'pipe',
+      maxBuffer: 32 * 1024 * 1024,
+    });
+  } catch (caught) {
+    const error = caught as NodeJS.ErrnoException & { stderr?: string };
+    if (error.code === 'ENOENT') {
+      fail(500, 'Git isn\'t installed, or isn\'t on the PATH. Install git and restart the server.');
+    }
+    const firstErrorLine = String(error.stderr || error.message).trim().split('\n')[0];
+    fail(500, `"git ${args[0]}" failed in ${folder}: ${firstErrorLine}`);
+  }
 }
 
-// The monorepo's root folder, from the path typed in the form.
+// The monorepo's root folder, from the absolute path typed in the form. Fails if it isn't a folder in a git repo.
 // A folder inside the monorepo works too: C:\git\monorepo\web-app → C:\git\monorepo.
 export function findRepo(folder: string): string {
-  return path.resolve(runGit('rev-parse --show-toplevel', folder).trim());
+  if (!path.isAbsolute(folder)) {
+    fail(400, 'Enter the absolute path to the monorepo, e.g. C:\\git\\monorepo or /home/you/monorepo.');
+  }
+  if (!fs.statSync(folder, { throwIfNoEntry: false })?.isDirectory()) {
+    fail(404, `There's no folder ${folder}.`);
+  }
+  try {
+    return path.resolve(runGit(['rev-parse', '--show-toplevel'], folder).trim());
+  } catch (error) {
+    if (error instanceof HttpError && error.message.startsWith('Git isn\'t installed')) throw error;
+    fail(400, `${folder} isn't in a git repository.`);
+  }
 }
 
-// appPattern as a regular expression: "*-app" → /^.*-app$/
-const APP_NAME_PATTERN = new RegExp('^' + config.appPattern.replaceAll('*', '.*') + '$');
+// appPattern as a regular expression. Only * is special and means "anything":
+//   "*-app"  →  /^.*-app$/   matches "web-app" and "admin-app", but not "docs"
+const APP_NAME_PATTERN = new RegExp(
+  '^' + config.appPattern.split('*').map(escapeForRegExp).join('.*') + '$'
+);
 
 // The app names: top-level folders of the monorepo that match appPattern.
 export function listApps(repo: string): string[] {
-  return fs.readdirSync(repo, { withFileTypes: true })
-    .filter(entry => entry.isDirectory() && APP_NAME_PATTERN.test(entry.name))
-    .map(entry => entry.name)
+  const folders = fs.readdirSync(repo, { withFileTypes: true })
+    .filter(entry => entry.isDirectory())
+    .map(entry => entry.name);
+
+  return folders
+    .filter(name => APP_NAME_PATTERN.test(name))
     .sort();
 }
 
 // The app's release tags, highest number first, e.g.
 //   web-app-12-NEW, web-app-12-OLD, web-app-11-NEW, ...
+// Unknown app names are refused here, so they never reach git.
 export function listTags(repo: string, app: string): string[] {
-  const tagNumber = (tag: string) => Number(tag.split('-').at(-2)); // "web-app-12-NEW" → 12
+  if (!listApps(repo).includes(app)) {
+    fail(404, `Unknown app "${app}"`);
+  }
 
-  return runGit(`tag --list "${app}-*-OLD" "${app}-*-NEW"`, repo)
+  // <app>-<number>-OLD or <app>-<number>-NEW. The number is captured as group 1.
+  const tagPattern = new RegExp(`^${escapeForRegExp(app)}-(\\d+)-(OLD|NEW)$`);
+  const tagNumber = (tag: string) => Number(tagPattern.exec(tag)![1]); // only called on tags that match
+
+  const allTags = runGit(['tag', '--list', `${app}-*`], path.join(repo, app))
     .split('\n')
-    .map(tag => tag.trim())
-    .filter(Boolean)
-    .sort((a, b) => tagNumber(b) - tagNumber(a) || a.localeCompare(b));
+    .map(tag => tag.trim());
+
+  return allTags
+    .filter(tag => tagPattern.test(tag))
+    .sort((a, b) => tagNumber(b) - tagNumber(a) || a.localeCompare(b)); // a, b: two tags being compared
 }
 
 // git prints one line per commit. Between the fields of a line it puts this invisible
@@ -51,13 +92,16 @@ const FIELD_SEPARATOR = '\x1f';
 // The PRs merged into the app between the two tags, newest first:
 //   [{ title: 'Add keyboard navigation', author: 'Alice' }, ...]
 // A merged PR is a commit whose message contains "Merged PR", e.g. "Merged PR 1234: Add keyboard navigation".
-export function listMergedPullRequests(repo: string, app: string, from: string, to: string): PullRequest[] {
-  // --first-parent: only the commits made on the main line, not the commits inside each PR.
-  // The format is hash, parent hashes, author, subject, separated by FIELD_SEPARATOR.
-  const output = runGit(
-    `log --first-parent --grep="Merged PR" --format="%H%x1f%P%x1f%an%x1f%s" ${from}..${to} -- ${app}`,
-    repo,
-  );
+export function listMergedPullRequests(repo: string, app: string, fromTag: string, toTag: string): PullRequest[] {
+  const output = runGit([
+    'log',
+    '--first-parent',                  // only the commits made on the main line, not the commits inside each PR
+    '--grep=Merged PR',                // only commits whose message contains "Merged PR"
+    '--format=%H%x1f%P%x1f%an%x1f%s',  // hash, parent hashes, author, subject — separated by FIELD_SEPARATOR
+    `${fromTag}..${toTag}`,            // everything after fromTag, up to and including toTag
+    '--',
+    '.',                               // only commits that changed this app's folder (git runs inside it)
+  ], path.join(repo, app));
 
   const commits = output.split('\n').filter(Boolean).map(line => {
     const [hash, parents, mergedBy, subject] = line.split(FIELD_SEPARATOR);
@@ -86,7 +130,7 @@ export function listMergedPullRequests(repo: string, app: string, from: string, 
 function authorsOfCommits(repo: string, hashes: string[]): Record<string, string> {
   if (hashes.length === 0) return {};
 
-  const output = runGit(`show --no-patch --format="%H%x1f%an" ${hashes.join(' ')}`, repo);
+  const output = runGit(['show', '--no-patch', '--format=%H%x1f%an', ...hashes], repo);
   const authors: Record<string, string> = {};
   for (const line of output.split('\n').filter(Boolean)) {
     const [hash, author] = line.split(FIELD_SEPARATOR);

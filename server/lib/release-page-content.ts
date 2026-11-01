@@ -1,6 +1,7 @@
 // The release page's content, in Confluence's "storage format":
 // HTML plus Confluence's own <ac:...> tags for things like info boxes (macros) and column layouts.
 import { config } from './settings.ts';
+import { escapeHtml } from './helpers.ts';
 import type { PullRequest } from './git.ts';
 
 export interface Release {
@@ -20,7 +21,7 @@ function pullRequestTable(pullRequests: PullRequest[], withVerification: boolean
   const headerRow = '<tr>' + headers.map(header => `<th>${header}</th>`).join('') + '</tr>';
 
   const rows = pullRequests.map(pullRequest => {
-    let cells = `<td>${pullRequest.author}</td><td>${pullRequest.title}</td>`;
+    let cells = `<td>${escapeHtml(pullRequest.author)}</td><td>${escapeHtml(pullRequest.title)}</td>`;
     if (withVerification) {
       cells += '<td></td><td></td>';
     }
@@ -35,7 +36,7 @@ function pullRequestTable(pullRequests: PullRequest[], withVerification: boolean
 function verificationInfoBox(): string {
   return '<ac:structured-macro ac:name="info">'
     + '<ac:parameter ac:name="title">Verification</ac:parameter>'
-    + `<ac:rich-text-body><p>${config.verificationInfo}</p></ac:rich-text-body>`
+    + `<ac:rich-text-body><p>${escapeHtml(config.verificationInfo)}</p></ac:rich-text-body>`
     + '</ac:structured-macro>';
 }
 
@@ -44,9 +45,9 @@ function verificationInfoBox(): string {
 export function releasePageContent({ app, version, date, from, to, pullRequests }: Release): string {
   const withVerification = config.appsWithVerification.includes(app);
 
-  const summary = `<p><strong>Version:</strong> ${version}`
-    + ` · <strong>Release date:</strong> ${date}`
-    + ` · <strong>Tags:</strong> ${from} → ${to}`
+  const summary = `<p><strong>Version:</strong> ${escapeHtml(version)}`
+    + ` · <strong>Release date:</strong> ${escapeHtml(date)}`
+    + ` · <strong>Tags:</strong> ${escapeHtml(from)} → ${escapeHtml(to)}`
     + ` · <strong>Pull requests:</strong> ${pullRequests.length}</p>`;
   const table = pullRequestTable(pullRequests, withVerification);
 

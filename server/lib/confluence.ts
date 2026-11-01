@@ -1,5 +1,6 @@
 // Confluence's REST API: checking the token and creating a page.
 import { config, CONFLUENCE_URL, ENV_FILE } from './settings.ts';
+import { fail } from './helpers.ts';
 
 // The parts of Confluence's answers this server reads.
 interface ConfluenceUser {
@@ -34,7 +35,7 @@ function tokenRejectedMessage(): string {
   return `Confluence rejected the token in ${ENV_FILE}. It's wrong or expired.`;
 }
 
-// Calls Confluence's REST API and returns its JSON answer.
+// Calls Confluence's REST API and returns its JSON answer, or fails with Confluence's reason.
 //   method:  'GET' or 'POST'
 //   apiPath: e.g. '/rest/api/user/current'
 //   body:    sent as JSON (POST only)
@@ -52,22 +53,28 @@ async function callConfluence<Answer>(token: string, method: 'GET' | 'POST', api
   const answer: unknown = await response.json().catch(() => ({}));
   if (response.ok) return answer as Answer;
 
-  if (response.status === 401) throw new Error(tokenRejectedMessage());
+  const status = response.status;
   const { message } = answer as { message?: string };
-  throw new Error(message ? `Confluence said: ${message}` : `Confluence answered HTTP ${response.status}`);
+  if (status === 401) {
+    fail(401, tokenRejectedMessage());
+  }
+  // Confluence's own problems are a "bad gateway" for the form; anything else is passed on as it is.
+  fail(status >= 500 ? 502 : status, message
+    ? `Confluence said: ${message}`
+    : `Confluence refused the request (HTTP ${status}).`);
 }
 
 // Asks Confluence who the token belongs to. Returns that person's name.
 export async function checkTokenWithConfluence(token: string): Promise<string> {
   const user = await callConfluence<ConfluenceUser>(token, 'GET', '/rest/api/user/current');
   // Cloud answers a bad token with an "anonymous" user instead of 401.
-  if (user.type === 'anonymous') throw new Error(tokenRejectedMessage());
+  if (user.type === 'anonymous') fail(401, tokenRejectedMessage());
   return user.displayName || user.username || 'user';
 }
 
 // Creates a page under the parent page, in the parent's space. Returns the new page's address.
 export async function createConfluencePage(token: string, { title, parentPageId, content }: NewPage): Promise<string> {
-  const parent = await callConfluence<ConfluencePage>(token, 'GET', `/rest/api/content/${parentPageId}?expand=space`);
+  const parent = await callConfluence<ConfluencePage>(token, 'GET', `/rest/api/content/${encodeURIComponent(parentPageId)}?expand=space`);
 
   const page = await callConfluence<ConfluencePage>(token, 'POST', '/rest/api/content', {
     type: 'page',
