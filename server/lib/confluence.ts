@@ -40,15 +40,23 @@ function tokenRejectedMessage(): string {
 //   apiPath: e.g. '/rest/api/user/current'
 //   body:    sent as JSON (POST only)
 async function callConfluence<Answer>(token: string, method: 'GET' | 'POST', apiPath: string, body?: object): Promise<Answer> {
-  const response = await fetch(CONFLUENCE_URL + apiPath, {
-    method,
-    headers: {
-      Authorization: authorizationHeader(token),
-      Accept: 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: body === undefined ? undefined : JSON.stringify(body),
-  });
+  let response: Response;
+  try {
+    response = await fetch(CONFLUENCE_URL + apiPath, {
+      method,
+      headers: {
+        Authorization: authorizationHeader(token),
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+      body: body === undefined ? undefined : JSON.stringify(body),
+      redirect: 'manual',                  // a redirect means a login page, not an answer
+      signal: AbortSignal.timeout(30_000), // give up after 30 seconds
+    });
+  } catch (caught) {
+    const error = caught as Error & { cause?: { code?: string } };
+    fail(502, `Can't reach Confluence at ${CONFLUENCE_URL} (${error.cause?.code || error.name}).`);
+  }
 
   const answer: unknown = await response.json().catch(() => ({}));
   if (response.ok) return answer as Answer;
@@ -57,6 +65,9 @@ async function callConfluence<Answer>(token: string, method: 'GET' | 'POST', api
   const { message } = answer as { message?: string };
   if (status === 401) {
     fail(401, tokenRejectedMessage());
+  }
+  if (status >= 300 && status < 400) {
+    fail(502, `Confluence at ${CONFLUENCE_URL} sent the request somewhere else (HTTP ${status}), usually to a login page.`);
   }
   // Confluence's own problems are a "bad gateway" for the form; anything else is passed on as it is.
   fail(status >= 500 ? 502 : status, message

@@ -26,7 +26,7 @@
 //   confluence.ts            Confluence's REST API: checking the token, creating a page
 //   release-page-content.ts  the page's table and info box
 //   browser.ts               opening the new page in the browser
-//   web.ts                   reading requests, sending answers and files
+//   web.ts                   who may call the server, reading requests, sending answers
 //
 // Every answer to the form is JSON: { ok: true, ... } or { ok: false, message: "what went wrong" }.
 
@@ -139,8 +139,25 @@ async function createRelease(body: Record<string, unknown>): Promise<{ pageUrl: 
 
 async function handleRequest(request: http.IncomingMessage, response: http.ServerResponse): Promise<void> {
   try {
+    // Only this computer's own page may use the server.
+    if (!web.isFromOwnPage(request)) {
+      fail(403, `This server only answers its own page. Open it as http://localhost:${PORT}/ or http://127.0.0.1:${PORT}/.`);
+    }
+
     const method = request.method ?? 'GET';
     const { pathname, searchParams } = new URL(request.url ?? '/', 'http://localhost');
+
+    // The form page: "/" is index.html, "/style.css" is public/style.css, and so on.
+    const fileName = web.publicFileFor(pathname);
+    if (method === 'GET' && fileName) {
+      web.sendPublicFile(response, fileName);
+      return;
+    }
+
+    // Everything else is the API, and needs the page token this run put in index.html.
+    if (!web.hasPageToken(request)) {
+      fail(403, 'This page is out of date: the release server was restarted. Reload the page.');
+    }
 
     let answer: object;
     if (method === 'GET' && pathname === '/api/folder') {
@@ -153,10 +170,6 @@ async function handleRequest(request: http.IncomingMessage, response: http.Serve
       answer = listTags(searchParams.get('repo') ?? '', searchParams.get('app') ?? '');
     } else if (method === 'POST' && pathname === '/api/release') {
       answer = await createRelease(await web.readJsonBody(request));
-    } else if (method === 'GET') {
-      // The form page: "/" is index.html, "/style.css" is public/style.css, "/form.js" is client/form.ts, and so on.
-      web.sendPublicFile(response, pathname);
-      return;
     } else {
       fail(404, `The release server has no "${method} ${pathname}".`);
     }
@@ -179,6 +192,7 @@ async function handleRequest(request: http.IncomingMessage, response: http.Serve
 // Start
 // ═══════════════════════════════════════════════════════════════════════════
 
-http.createServer(handleRequest).listen(PORT, () => {
+// 127.0.0.1: only this computer can reach the server.
+http.createServer(handleRequest).listen(PORT, '127.0.0.1', () => {
   console.log(`Server running at http://localhost:${PORT}/ (Confluence: ${CONFLUENCE_URL})`);
 });

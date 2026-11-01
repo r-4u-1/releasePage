@@ -1,4 +1,4 @@
-# Release page creator · v-6
+# Release page creator · v-7
 
 A small local web app that creates the **Confluence release page** for one app in the monorepo.
 
@@ -174,7 +174,11 @@ The token **never reaches the page**: the form only learns whether it works and 
 ### Keeping the token safe
 - **Kept out of git:** `server/.gitignore` lists `.env`.
 - **Only this tool reads it:** a token in the monorepo's root `.env` could be loaded by other tools there (dev servers, Docker Compose, build tools). In `server/.env`, only this server sees it.
-Not yet: the server listens on every network interface and answers any website, so anyone who can reach your computer can use the token through it. `feature/v-7` locks it down.
+- **The server only accepts requests from this computer:** it listens on `127.0.0.1` only.
+- **And only from its own page:** requests from other websites, or addressed to it under any other name than `localhost` or `127.0.0.1`, are refused.
+- **And only from a page it served:** each start makes a new random page token, puts it in the page, and refuses API calls that don't send it back as `X-Token`.
+
+Anything else running on your computer can still reach it, so don't keep the token in `.env` on a shared machine.
 
 ---
 
@@ -217,7 +221,7 @@ server/
 │   ├── confluence.ts   Checks the token, creates the page
 │   ├── release-page-content.ts  The page's table and info box
 │   ├── browser.ts      Opens the new page in the browser
-│   └── web.ts          Reading requests, sending answers and files
+│   └── web.ts          Who may call the server, reading requests, sending answers
 ├── tsconfig.json       How the editor checks the server
 ├── config.json         Settings
 └── .env                Your Confluence token (you create it; gitignored)
@@ -228,6 +232,8 @@ server/
 ## API
 
 All answers are JSON with `ok: true/false`. Errors come with a `message` and a matching HTTP status.
+
+Every API call needs the `X-Token` header: a random page token the server makes each time it starts and puts in `index.html`. Without it (or after a restart, until the page is reloaded) the answer is `403`.
 
 | Method | Path | Does |
 |---|---|---|
@@ -249,3 +255,4 @@ All answers are JSON with `ok: true/false`. Errors come with a `message` and a m
 | v-4 | The real PR author, isVerified and Note columns plus an info box for some apps, the token status line, and the new page opens by itself. |
 | v-5 | Every feature of the final app: TypeScript form, field checks, calendar, intro animations, Confluence Cloud. Few safety checks. |
 | v-6 | Safe input: git runs without a shell, every value is checked, HTML is escaped, requests are size-limited, internal errors stay in the terminal. |
+| v-7 | Locked to this computer: listens on 127.0.0.1 only, refuses other websites, needs a random page token, and serves only known files. Confluence calls time out. |
