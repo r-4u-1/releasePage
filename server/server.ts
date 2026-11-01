@@ -16,100 +16,133 @@
 //   GET  /api/tags?repo=…&app=web-app  the app's OLD / NEW tags
 //   POST /api/release                  create the release page
 //
-// The details live in lib/:
-//   settings.ts              config.json and the paths
+// The form sends the monorepo's root folder (from /api/folder) with every request, and git runs there.
+//
+// This file shows what each of those does, and handleRequest() at the bottom picks one by its path. The details live in lib/:
+//   settings.ts              config.json, the port, the paths and Confluence's address
 //   git.ts                   apps, tags and merged PRs
-//   confluence.ts            the token, checking it, creating a page
+//   token.ts                 the Confluence token from server/.env
+//   confluence.ts            Confluence's REST API: checking the token, creating a page
 //   release-page-content.ts  the page's table and info box
 //   browser.ts               opening the new page in the browser
+//   web.ts                   reading requests, sending answers and files
 //
 // Every answer to the form is JSON: { ok: true, ... } or { ok: false, message: "what went wrong" }.
 
 import http from 'node:http';
-import fs from 'node:fs';
-import path from 'node:path';
-import { config, PORT, PUBLIC_DIR } from './lib/settings.ts';
+import { config, PORT, CONFLUENCE_URL } from './lib/settings.ts';
 import * as git from './lib/git.ts';
+import { requireToken } from './lib/token.ts';
 import * as confluence from './lib/confluence.ts';
 import { releasePageContent } from './lib/release-page-content.ts';
 import { openInBrowser } from './lib/browser.ts';
+import * as web from './lib/web.ts';
 
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/folder?path=C:\git\monorepo
+// Is this path a folder in a git repo? The form checks the monorepo's path with it.
+// Returns the repo's root, e.g. { folder: 'C:\\git\\monorepo' }, which the form sends with every later request.
+// ═══════════════════════════════════════════════════════════════════════════
+
+function checkFolder(folder: string): { folder: string } {
+  return { folder: git.findRepo(folder) };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/token
+// Is there a working token in server/.env? Never sends the token itself.
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function checkToken(): Promise<{ message: string }> {
+  const token = requireToken();
+  const userName = await confluence.checkTokenWithConfluence(token);
+  return { message: `Authenticated as ${userName}` };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/apps?repo=C:\git\monorepo
+// The app names, e.g. { apps: ['admin-app', 'web-app'] }
+// ═══════════════════════════════════════════════════════════════════════════
+
+function listApps(repo: string): { apps: string[] } {
+  return { apps: git.listApps(repo) };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// GET /api/tags?repo=C:\git\monorepo&app=web-app
+// The app's OLD / NEW tags, newest first, e.g. { tags: ['web-app-12-NEW', 'web-app-12-OLD', ...] }
+// ═══════════════════════════════════════════════════════════════════════════
+
+function listTags(repo: string, app: string): { tags: string[] } {
+  return { tags: git.listTags(repo, app) };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // POST /api/release
 // Body: { repo, app, from, to, version, date }
 // Reads the merged PRs, creates the release page and opens it.
-async function createRelease(body: any): Promise<{ pageUrl: string; pullRequestCount: number }> {
+// ═══════════════════════════════════════════════════════════════════════════
+
+async function createRelease(body: Record<string, any>): Promise<{ pageUrl: string; pullRequestCount: number }> {
+  const token = requireToken();
   const { repo, app, from, to, version, date } = body;
+
+  // 1. Read the merged PRs between the two tags.
   const pullRequests = git.listMergedPullRequests(repo, app, from, to);
-  const pageUrl = await confluence.createConfluencePage(
-    `Rel of ${app} - ${date}`,
-    config.parentPageIds[app],
-    releasePageContent({ app, version, date, from, to, pullRequests }),
-  );
+
+  // 2. Create the page in Confluence.
+  const pageUrl = await confluence.createConfluencePage(token, {
+    title: `Rel of ${app} - ${date}`,
+    parentPageId: config.parentPageIds[app],
+    content: releasePageContent({ app, version, date, from, to, pullRequests }),
+  });
+
+  // 3. Open it.
   console.log(`[release] created ${pageUrl} with ${pullRequests.length} PRs`);
   openInBrowser(pageUrl);
   return { pageUrl, pullRequestCount: pullRequests.length };
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// Requests and answers
+// Every request goes through here
 // ═══════════════════════════════════════════════════════════════════════════
-
-const CONTENT_TYPES: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8',
-  '.css': 'text/css; charset=utf-8',
-  '.js': 'text/javascript; charset=utf-8',
-};
-
-// The form page: "/" is index.html, "/style.css" is public/style.css, and so on.
-function sendPublicFile(response: http.ServerResponse, pathname: string): void {
-  const file = path.join(PUBLIC_DIR, pathname === '/' ? 'index.html' : pathname);
-  const content = fs.readFileSync(file); // read first: a missing file fails before anything is sent
-  response.writeHead(200, { 'Content-Type': CONTENT_TYPES[path.extname(file)] || 'application/octet-stream' });
-  response.end(content);
-}
-
-async function readJsonBody(request: http.IncomingMessage): Promise<any> {
-  let text = '';
-  for await (const chunk of request) text += chunk;
-  return JSON.parse(text);
-}
-
-function sendJson(response: http.ServerResponse, status: number, data: object): void {
-  response.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
-  response.end(JSON.stringify(data));
-}
 
 async function handleRequest(request: http.IncomingMessage, response: http.ServerResponse): Promise<void> {
   try {
     const method = request.method ?? 'GET';
     const { pathname, searchParams } = new URL(request.url ?? '/', 'http://localhost');
-    const repo = searchParams.get('repo') ?? '';
 
     let answer: object;
     if (method === 'GET' && pathname === '/api/folder') {
-      answer = { folder: git.findRepo(searchParams.get('path') ?? '') };
+      answer = checkFolder(searchParams.get('path') ?? '');
     } else if (method === 'GET' && pathname === '/api/token') {
-      answer = { message: `Authenticated as ${await confluence.checkToken()}` };
+      answer = await checkToken();
     } else if (method === 'GET' && pathname === '/api/apps') {
-      answer = { apps: git.listApps(repo) };
+      answer = listApps(searchParams.get('repo') ?? '');
     } else if (method === 'GET' && pathname === '/api/tags') {
-      answer = { tags: git.listTags(repo, searchParams.get('app') ?? '') };
+      answer = listTags(searchParams.get('repo') ?? '', searchParams.get('app') ?? '');
     } else if (method === 'POST' && pathname === '/api/release') {
-      answer = await createRelease(await readJsonBody(request));
+      answer = await createRelease(await web.readJsonBody(request));
     } else if (method === 'GET') {
-      sendPublicFile(response, pathname);
+      // The form page: "/" is index.html, "/style.css" is public/style.css, "/form.js" is client/form.ts, and so on.
+      web.sendPublicFile(response, pathname);
       return;
     } else {
-      sendJson(response, 404, { ok: false, message: `No ${method} ${pathname}` });
+      web.sendJson(response, 404, { ok: false, message: `The release server has no "${method} ${pathname}".` });
       return;
     }
 
-    sendJson(response, 200, { ok: true, ...answer });
+    web.sendJson(response, 200, { ok: true, ...answer });
   } catch (error) {
-    sendJson(response, 500, { ok: false, message: (error as Error).message });
+    console.error('[server]', error instanceof Error ? error.message : error);
+    web.sendJson(response, 500, { ok: false, message: error instanceof Error ? error.message : String(error) });
   }
 }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// Start
+// ═══════════════════════════════════════════════════════════════════════════
+
 http.createServer(handleRequest).listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}/ (Confluence: ${config.confluenceBaseUrl})`);
+  console.log(`Server running at http://localhost:${PORT}/ (Confluence: ${CONFLUENCE_URL})`);
 });
