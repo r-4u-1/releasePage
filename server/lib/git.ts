@@ -2,7 +2,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
-import { config } from './settings.ts';
+import { config, SERVER_DIR } from './settings.ts';
 import { fail, escapeForRegExp, HttpError } from './helpers.ts';
 
 // One merged PR on the release page.
@@ -47,6 +47,12 @@ export function findRepo(folder: string): string {
   }
 }
 
+// The top-level folder of the repo this tool lives in, e.g. "release-page". It's never listed as an app.
+// Doesn't matter when the tool lives outside the monorepo.
+function ownFolder(repo: string): string {
+  return path.relative(repo, SERVER_DIR).split(path.sep)[0];
+}
+
 // appPattern as a regular expression. Only * is special and means "anything":
 //   "*-app"  →  /^.*-app$/   matches "web-app" and "admin-app", but not "docs"
 const APP_NAME_PATTERN = new RegExp(
@@ -54,6 +60,7 @@ const APP_NAME_PATTERN = new RegExp(
 );
 
 // The app names: top-level folders of the monorepo that match appPattern.
+// Only matters for broad patterns like "*": hidden folders, node_modules and this tool's own folder are left out.
 export function listApps(repo: string): string[] {
   const folders = fs.readdirSync(repo, { withFileTypes: true })
     .filter(entry => entry.isDirectory())
@@ -61,6 +68,7 @@ export function listApps(repo: string): string[] {
 
   return folders
     .filter(name => APP_NAME_PATTERN.test(name))
+    .filter(name => !name.startsWith('.') && name !== 'node_modules' && name !== ownFolder(repo))
     .sort();
 }
 

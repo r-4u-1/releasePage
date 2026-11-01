@@ -1,4 +1,4 @@
-# Release page creator · v-7
+# Release page creator
 
 A small local web app that creates the **Confluence release page** for one app in the monorepo.
 
@@ -34,6 +34,7 @@ You pick an app, two git tags, a version and a release date. The server:
 - [Configuration](#configuration)
 - [Files](#files)
 - [API](#api)
+- [Troubleshooting](#troubleshooting)
 - [Versions](#versions)
 
 ---
@@ -135,7 +136,7 @@ Creates the release page and opens it in your browser. Under the button you see 
 
 ## How apps, tags and PRs are found
 
-**Apps** are the top-level folders of the monorepo whose name matches `appPattern` in `config.json`. The default is `*-app`, so `web-app` and `admin-app` are apps, but `docs`, `shared-lib` or `app-web` are not. `*` matches anything.
+**Apps** are the top-level folders of the monorepo whose name matches `appPattern` in `config.json`. The default is `*-app`, so `web-app` and `admin-app` are apps, but `docs`, `shared-lib` or `app-web` are not. `*` matches anything. For broad patterns like `*`, folders starting with `.`, `node_modules`, and the folder this tool lives in are left out.
 
 **Tags** must be named after the app folder:
 
@@ -245,6 +246,33 @@ Every API call needs the `X-Token` header: a random page token the server makes 
 
 ---
 
+## Troubleshooting
+
+| You see | Try |
+|---|---|
+| **This page isn't connected to the release server** | The page was opened from somewhere else, e.g. VS Code's Live Server or straight from the file. Start the server with `node server.ts` in the `server` folder and open **http://localhost:3000/**. |
+| **Can't reach the release server** | The server isn't running. Start it with `node server.ts` in the `server` folder. |
+| **No Confluence token found** | Add `CONFLUENCE_TOKEN=<your token>` to `server/.env` (the message shows the exact path), then click **Check again**. |
+| **Confluence rejected the token** | The token is wrong or expired. Create a new one and replace it in `server/.env`. For Cloud, also set `confluenceEmail`. |
+| **Can't find Confluence at …** / **Can't reach Confluence at …** / **… refused the connection** | Check `confluenceBaseUrl` in `server/config.json`, and that you're on the network or VPN that can reach Confluence. |
+| **Confluence at … didn't answer within 30 seconds** | Usually the network or VPN. Check that you can open Confluence in the browser. |
+| **Can't verify the security certificate of Confluence** | Your company inspects HTTPS traffic. Start Node with `NODE_EXTRA_CA_CERTS=<company-root.pem>`. Never use `NODE_TLS_REJECT_UNAUTHORIZED=0`. |
+| **Confluence at … has nothing at /rest/api/… (HTTP 404)** or **… sent the request somewhere else** | `confluenceBaseUrl` doesn't point at Confluence itself. For Confluence Cloud it ends in `/wiki`. |
+| **Your Confluence account isn't allowed to do this** | Your account can't see the parent page or add pages in its space. Ask a space admin. |
+| **&lt;app&gt; has no parent page yet** | Add the app to `parentPageIds` in `server/config.json`. |
+| **There's no Confluence page with ID …** | The ID in `parentPageIds` is wrong, or your account can't see that page. |
+| **No merged PRs in &lt;app&gt; between …** | No commit between the tags has `Merged PR` in its message and changes the app's folder. Check that **From tag** is the older tag and **To tag** the newer one. |
+| **Confluence said: A page with this title already exists** | A release page for this app and date already exists in the space. Rename or delete it in Confluence. |
+| App list says **No apps found** | No top-level folder matches `appPattern`. Check the folder names, and the path to the monorepo. |
+| **No app-x-&lt;n&gt;-OLD / -NEW tags found** | The app has no tags named like `app-x-12-OLD`. Fetch them with `git fetch --tags`. |
+| **This server only answers its own page** | Open the page as `http://localhost:3000/` or `http://127.0.0.1:3000/`. |
+| **Git isn't installed, or isn't on the PATH** | Install git, then restart the server. |
+| **ERR_UNKNOWN_FILE_EXTENSION ".ts"** when starting | Your Node is older than 22.18. Update Node, or start with `node --experimental-strip-types server.ts`. |
+| `EADDRINUSE` when starting | Port 3000 is in use. Stop the other program, or start with a different `PORT`. |
+| The new page doesn't open by itself | Use the **open in Confluence** link under the button. |
+
+---
+
 ## Versions
 
 | Version | What was added |
@@ -256,3 +284,4 @@ Every API call needs the `X-Token` header: a random page token the server makes 
 | v-5 | Every feature of the final app: TypeScript form, field checks, calendar, intro animations, Confluence Cloud. Few safety checks. |
 | v-6 | Safe input: git runs without a shell, every value is checked, HTML is escaped, requests are size-limited, internal errors stay in the terminal. |
 | v-7 | Locked to this computer: listens on 127.0.0.1 only, refuses other websites, needs a random page token, and serves only known files. Confluence calls time out. |
+| v-8 | Clear messages for every problem, and the full README with troubleshooting. |

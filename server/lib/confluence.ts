@@ -1,6 +1,6 @@
 // Confluence's REST API: checking the token and creating a page.
 import { config, CONFLUENCE_URL, ENV_FILE } from './settings.ts';
-import { fail } from './helpers.ts';
+import { fail, HttpError } from './helpers.ts';
 
 // The parts of Confluence's answers this server reads.
 interface ConfluenceUser {
@@ -31,11 +31,37 @@ function authorizationHeader(token: string): string {
   return 'Basic ' + Buffer.from(emailAndToken).toString('base64');
 }
 
-function tokenRejectedMessage(): string {
-  return `Confluence rejected the token in ${ENV_FILE}. It's wrong or expired.`;
+// Why Confluence couldn't be reached at all, in words someone can act on.
+// error.cause.code is Node's reason, e.g. ENOTFOUND (no such address) or SELF_SIGNED_CERT_IN_CHAIN.
+function cannotReachConfluence(caught: unknown): string {
+  const error = caught as Error & { cause?: { code?: string } };
+  const reason = error.cause?.code || error.name;
+  const where = `Confluence at ${CONFLUENCE_URL}`;
+  const checkUrl = 'Check "confluenceBaseUrl" in server/config.json';
+
+  if (reason === 'TimeoutError') {
+    return `${where} didn't answer within 30 seconds. Check that you're on the network or VPN that can reach it.`;
+  }
+  if (reason === 'ENOTFOUND') {
+    return `Can't find ${where}: that address doesn't exist. ${checkUrl}.`;
+  }
+  if (reason === 'ECONNREFUSED') {
+    return `${where} refused the connection. ${checkUrl}, including the port.`;
+  }
+  if (/CERT|UNABLE_TO_VERIFY/.test(reason || '')) {
+    return `Can't verify the security certificate of ${where} (${reason}). If your company inspects HTTPS traffic, `
+      + 'start Node with NODE_EXTRA_CA_CERTS=<path to the company root certificate>.';
+  }
+  return `Can't reach ${where} (${reason || error.message}). ${checkUrl}, and that you're on the network or VPN that can reach it.`;
 }
 
-// Calls Confluence's REST API and returns its JSON answer, or fails with Confluence's reason.
+// The message for a token Confluence doesn't accept.
+function tokenRejectedMessage(): string {
+  return `Confluence rejected the token in ${ENV_FILE}. It's wrong or expired: create a new one in Confluence `
+    + '(profile picture → Settings → Personal Access Tokens) and replace it.';
+}
+
+// Calls Confluence's REST API and returns its JSON answer, or fails with a readable message.
 //   method:  'GET' or 'POST'
 //   apiPath: e.g. '/rest/api/user/current'
 //   body:    sent as JSON (POST only)
@@ -53,9 +79,8 @@ async function callConfluence<Answer>(token: string, method: 'GET' | 'POST', api
       redirect: 'manual',                  // a redirect means a login page, not an answer
       signal: AbortSignal.timeout(30_000), // give up after 30 seconds
     });
-  } catch (caught) {
-    const error = caught as Error & { cause?: { code?: string } };
-    fail(502, `Can't reach Confluence at ${CONFLUENCE_URL} (${error.cause?.code || error.name}).`);
+  } catch (error) {
+    fail(502, cannotReachConfluence(error));
   }
 
   const answer: unknown = await response.json().catch(() => ({}));
@@ -63,19 +88,32 @@ async function callConfluence<Answer>(token: string, method: 'GET' | 'POST', api
 
   const status = response.status;
   const { message } = answer as { message?: string };
+  const checkUrl = 'Check "confluenceBaseUrl" in server/config.json (for Confluence Cloud it ends in /wiki).';
+
   if (status === 401) {
     fail(401, tokenRejectedMessage());
   }
-  if (status >= 300 && status < 400) {
-    fail(502, `Confluence at ${CONFLUENCE_URL} sent the request somewhere else (HTTP ${status}), usually to a login page.`);
+  if (status === 403) {
+    fail(403, 'Your Confluence account isn\'t allowed to do this' + (message ? `: ${message}` : '.')
+      + ' Check that it can see the parent page and add pages in its space.');
   }
-  // Confluence's own problems are a "bad gateway" for the form; anything else is passed on as it is.
-  fail(status >= 500 ? 502 : status, message
+  if (status >= 300 && status < 400) {
+    // Usually a redirect to a login page: the address isn't Confluence's REST API.
+    fail(502, `Confluence at ${CONFLUENCE_URL} sent the request somewhere else (HTTP ${status}), usually to a login page. ${checkUrl}`);
+  }
+  if (status === 404) {
+    fail(404, `Confluence at ${CONFLUENCE_URL} has nothing at ${apiPath} (HTTP 404). ${checkUrl}`);
+  }
+  if (status >= 500) {
+    fail(502, `Confluence had an internal problem (HTTP ${status}). Try again in a few minutes.`);
+  }
+  // Confluence explains most other problems itself, e.g. "A page with this title already exists".
+  fail(status, message
     ? `Confluence said: ${message}`
-    : `Confluence refused the request (HTTP ${status}).`);
+    : `Confluence refused the request (HTTP ${status}) without saying why.`);
 }
 
-// Asks Confluence who the token belongs to. Returns that person's name.
+// Asks Confluence who the token belongs to. Returns that person's name, or fails.
 export async function checkTokenWithConfluence(token: string): Promise<string> {
   const user = await callConfluence<ConfluenceUser>(token, 'GET', '/rest/api/user/current');
   // Cloud answers a bad token with an "anonymous" user instead of 401.
@@ -85,7 +123,16 @@ export async function checkTokenWithConfluence(token: string): Promise<string> {
 
 // Creates a page under the parent page, in the parent's space. Returns the new page's address.
 export async function createConfluencePage(token: string, { title, parentPageId, content }: NewPage): Promise<string> {
-  const parent = await callConfluence<ConfluencePage>(token, 'GET', `/rest/api/content/${encodeURIComponent(parentPageId)}?expand=space`);
+  let parent: ConfluencePage;
+  try {
+    parent = await callConfluence<ConfluencePage>(token, 'GET', `/rest/api/content/${encodeURIComponent(parentPageId)}?expand=space`);
+  } catch (error) {
+    if (error instanceof HttpError && error.status === 404) {
+      fail(400, `There's no Confluence page with ID ${parentPageId}, or your account can't see it. `
+        + 'Check "parentPageIds" in server/config.json: the ID is in the page\'s address (…pageId=123456).');
+    }
+    throw error;
+  }
 
   const page = await callConfluence<ConfluencePage>(token, 'POST', '/rest/api/content', {
     type: 'page',

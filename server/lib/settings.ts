@@ -23,7 +23,7 @@ export const config: Config = JSON.parse(fs.readFileSync(path.join(SERVER_DIR, '
 // The PORT environment variable wins over config.json.
 export const PORT = Number(process.env.PORT) || config.port;
 
-// The folder with the form page.
+// The folder with the form page. Only the files in it can be fetched, nothing else on disk.
 export const PUBLIC_DIR = path.join(SERVER_DIR, '..', 'public');
 
 // The form's scripts, in TypeScript. The server removes their types when the page asks for them.

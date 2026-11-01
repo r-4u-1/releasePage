@@ -4,6 +4,17 @@
 // The element with this id. Pass the element type when it matters, e.g. $<HTMLInputElement>('version').
 const $ = <T extends HTMLElement = HTMLElement>(id: string): T => document.getElementById(id) as T;
 
+// What to do when the page can't talk to the release server.
+const START_SERVER = 'Start the server with "node server.ts" in the server folder, then open the address it prints (http://localhost:3000/).';
+
+// An error from api(). notConnected is set when the page can't talk to the release server at all,
+// so the fields can show a short note instead of repeating the whole message.
+type ApiError = Error & { notConnected?: boolean };
+
+function notConnectedError(message: string): ApiError {
+  return Object.assign(new Error(message + ' ' + START_SERVER), { notConnected: true });
+}
+
 // What the release server answers. Every answer has "ok"; a failed one has a "message".
 interface TokenAnswer { message: string }
 interface FolderAnswer { folder: string }
@@ -18,18 +29,35 @@ interface ReleaseRequest { repo: string; app: string; version: string; date: str
 const PAGE_TOKEN = document.querySelector<HTMLMetaElement>('meta[name="page-token"]')?.content ?? '';
 
 // Calls the release server. GET without a body, POST with one.
-// Returns the JSON answer, or throws an Error with the server's message.
-async function api<Answer>(url: string, body?: object): Promise<Answer> {
-  const options: RequestInit = body === undefined ? { headers: { 'X-Token': PAGE_TOKEN } } : {
+// Returns the JSON answer, or throws an Error with a message a person can act on.
+async function api<Answer>(url: string, body?: object, signal?: AbortSignal): Promise<Answer> {
+  const options: RequestInit = body === undefined ? { headers: { 'X-Token': PAGE_TOKEN }, signal } : {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'X-Token': PAGE_TOKEN },
     body: JSON.stringify(body),
+    signal,
   };
 
-  const res = await fetch(url, options);
-  const data = await res.json();
+  if (location.protocol === 'file:') {
+    throw notConnectedError('This page was opened as a file, so it can\'t reach the release server.');
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(url, options);
+  } catch (err) {
+    if (err instanceof Error && err.name === 'AbortError') throw err;
+    throw notConnectedError(`Can't reach the release server at ${location.origin}: it isn't running.`);
+  }
+
+  // The release server always answers JSON with "ok". Anything else means this page was opened
+  // from a different server, e.g. VS Code's Live Server, which doesn't know the release server's API.
+  const data = await res.json().catch(() => null);
+  if (!data || typeof data.ok !== 'boolean') {
+    throw notConnectedError(`This page isn't connected to the release server: ${location.host} answered "${url}" with HTTP ${res.status}.`);
+  }
   if (!data.ok) {
-    throw new Error(data.message);
+    throw new Error(data.message || `The release server answered HTTP ${res.status} without saying why. Its terminal may show more.`);
   }
   return data as Answer;
 }
@@ -212,7 +240,7 @@ async function checkRepoFolder() {
     showValid('repo');
     loadApps();
   } catch (err) {
-    showError('repo', (err as Error).message);
+    showError('repo', (err as ApiError).message);
   }
 }
 
@@ -241,7 +269,7 @@ async function checkToken() {
     showTokenStatus(true, 'Confluence token found in .env · ' + result.message);
   } catch (err) {
     // e.g. "No Confluence token found. Add the line CONFLUENCE_TOKEN=<your token> to C:\monorepo\release-page\server\.env"
-    showTokenStatus(false, (err as Error).message);
+    showTokenStatus(false, (err as ApiError).message);
   }
 }
 
@@ -263,8 +291,10 @@ async function loadApps() {
     const { apps } = await api<AppsAnswer>(`/api/apps?repo=${encodeURIComponent(repo)}`);
     fillSelect(appSelect, apps, apps.length ? '— Select app —' : 'No apps found');
   } catch (err) {
+    const error = err as ApiError;
     fillSelect(appSelect, [], 'Could not load apps');
-    showError('app', (err as Error).message);
+    // The token line above already explains a missing connection in full.
+    showError('app', error.notConnected ? 'Could not load the apps: the page isn\'t connected to the release server (see above).' : error.message);
   }
 }
 
@@ -287,7 +317,7 @@ async function loadTags(app: string) {
     toSelect.value = news[0] || '';
     fromSelect.disabled = toSelect.disabled = false;
   } catch (err) {
-    showError('app', (err as Error).message);
+    showError('app', (err as ApiError).message);
   }
 }
 
@@ -354,7 +384,7 @@ $<HTMLFormElement>('mainForm').addEventListener('submit', async event => {
     status.replaceChildren(`Release page created with ${pullRequestCount} PRs — `, link);
     status.classList.add('ok');
   } catch (err) {
-    status.textContent = (err as Error).message;
+    status.textContent = (err as ApiError).message;
     status.classList.add('err');
   } finally {
     button.disabled = false;
