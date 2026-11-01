@@ -2,51 +2,53 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Release page</title>
+  <link href="style.css" rel="stylesheet"/>
 </head>
 <body>
-  <h1>Create a release page</h1>
+  <main class="card">
+    <h1>Create a release page</h1>
+    <p class="sub">Lists every merged change between two tags of an app and publishes it as a Confluence page.</p>
 
-  <form id="releaseForm">
-    <p><label>App <input id="app" placeholder="web-app"/></label></p>
-    <p><label>Version <input id="version" placeholder="1.4.0"/></label></p>
-    <p><label>Date <input id="date" type="date"/></label></p>
-    <p><label>From tag <input id="from" placeholder="web-app-12-OLD"/></label></p>
-    <p><label>To tag <input id="to" placeholder="web-app-12-NEW"/></label></p>
-    <button type="submit">Create page</button>
-  </form>
+    <form id="mainForm">
+      <div class="field full-width">
+        <label for="repo">Path to monorepo</label>
+        <input type="text" id="repo" placeholder="C:\git\monorepo" autocomplete="off" spellcheck="false"/>
+        <span class="err-msg" id="e-repo"></span>
+      </div>
 
-  <p id="status"></p>
+      <div class="field full-width">
+        <label for="app">App</label>
+        <select id="app"><option value="">Enter the monorepo path first</option></select>
+        <span class="err-msg" id="e-app"></span>
+      </div>
 
-  <script>
-    const form = document.getElementById('releaseForm');
-    const status = document.getElementById('status');
-    const value = id => document.getElementById(id).value;
+      <div class="field">
+        <label for="version">Version</label>
+        <input type="text" id="version" placeholder="1.4.0" autocomplete="off"/>
+      </div>
+      <div class="field">
+        <label for="eventdate">Date</label>
+        <input type="date" id="eventdate"/>
+      </div>
 
-    form.addEventListener('submit', async event => {
-      event.preventDefault();
-      const release = {
-        app: value('app'),
-        version: value('version'),
-        date: value('date'),
-        from: value('from'),
-        to: value('to'),
-      };
+      <div class="field">
+        <label for="tagfrom">From tag (OLD)</label>
+        <select id="tagfrom"><option value="">Select an app first</option></select>
+      </div>
+      <div class="field">
+        <label for="tagto">To tag (NEW)</label>
+        <select id="tagto"><option value="">Select an app first</option></select>
+      </div>
 
-      status.textContent = 'Creating the release page…';
-      const response = await fetch('/api/release', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(release),
-      });
-      const data = await response.json();
+      <div class="submit-row full-width">
+        <button type="submit" id="submitBtn">Create page</button>
+        <span class="status-msg" id="statusMsg"></span>
+      </div>
+    </form>
+  </main>
 
-      if (!data.ok) {
-        status.textContent = data.message;
-        return;
-      }
-      status.innerHTML = `Release page created with ${data.pullRequestCount} PRs — <a href="${data.pageUrl}" target="_blank">open in Confluence</a>`;
-    });
-  </script>
+  <script src="form.js"></script>
 </body>
 </html>

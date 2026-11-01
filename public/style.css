@@ -1,0 +1,81 @@
+*, *::before, *::after { box-sizing: border-box; }
+
+:root {
+  --bg: #f4f4f6;
+  --card: #ffffff;
+  --text: #1c1c22;
+  --muted: #6b6b76;
+  --line: #d9d9e0;
+  --accent: #b3001b;
+  --ok: #1d7a43;
+  --err: #c0262d;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+.card {
+  width: 100%;
+  max-width: 560px;
+  padding: 32px;
+  background: var(--card);
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+}
+
+h1 { margin: 0 0 4px; font-size: 24px; }
+.sub { margin: 0 0 24px; color: var(--muted); }
+
+form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.full-width { grid-column: 1 / -1; }
+
+.field { display: flex; flex-direction: column; gap: 4px; }
+label { font-size: 13px; font-weight: 600; color: var(--muted); }
+
+input, select {
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: #fff;
+  font: inherit;
+  color: inherit;
+}
+input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+
+.err-msg { min-height: 1em; font-size: 12px; color: var(--err); }
+
+.submit-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+
+button {
+  padding: 10px 22px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:disabled { opacity: 0.6; cursor: progress; }
+
+.status-msg { font-size: 14px; color: var(--muted); }
+.status-msg.ok { color: var(--ok); }
+.status-msg.err { color: var(--err); }
+
+@media (max-width: 520px) {
+  form { grid-template-columns: 1fr; }
+  .card { padding: 24px 20px; }
+}
