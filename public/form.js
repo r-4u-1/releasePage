@@ -41,6 +41,29 @@ async function checkRepoFolder() {
 
 repoInput.addEventListener('change', checkRepoFolder);
 
+/* ═══ TOKEN — the server reads it from server/.env; the page only learns whether it works ═══ */
+function showTokenStatus(works, text) {
+  getById('token-status').classList.remove('checking');
+  getById('token-status').classList.toggle('bad', !works);
+  getById('token-status-text').textContent = text;
+  getById('token-recheck').hidden = works;
+}
+
+async function checkToken() {
+  getById('token-status').classList.add('checking');
+  getById('token-status-text').textContent = 'Checking the Confluence token…';
+  try {
+    const { message } = await api('/api/token');
+    showTokenStatus(true, 'Confluence token found in .env · ' + message);
+  } catch (err) {
+    showTokenStatus(false, err.message);
+  }
+}
+
+// After adding the token to .env, "Check again" picks it up. No restart needed.
+getById('token-recheck').addEventListener('click', checkToken);
+checkToken();
+
 /* ═══ APP → TAGS ═══ */
 async function loadApps() {
   const { apps } = await api(`/api/apps?repo=${encodeURIComponent(repo)}`);

@@ -57,6 +57,22 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 
 .err-msg { min-height: 1em; font-size: 12px; color: var(--err); }
 
+.token-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  border-radius: 6px;
+  background: #eef7f1;
+  font-size: 13px;
+  color: var(--ok);
+}
+.token-status-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
+.token-status.bad { background: #fbeeee; color: var(--err); }
+.token-status.checking { background: #f1f1f4; color: var(--muted); }
+.token-status-btn { padding: 2px 10px; font-size: 12px; background: var(--err); }
+
 .submit-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 
 button {
