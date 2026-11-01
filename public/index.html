@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <title>Release page</title>
+</head>
+<body>
+  <h1>Release page</h1>
+
+  <form id="releaseForm">
+    <p><label>App <input id="app" placeholder="web-app"/></label></p>
+    <p><label>From tag <input id="from" placeholder="web-app-12-OLD"/></label></p>
+    <p><label>To tag <input id="to" placeholder="web-app-12-NEW"/></label></p>
+    <button type="submit">List merged PRs</button>
+  </form>
+
+  <p id="status"></p>
+  <ul id="pullRequests"></ul>
+
+  <script>
+    const form = document.getElementById('releaseForm');
+    const status = document.getElementById('status');
+    const list = document.getElementById('pullRequests');
+
+    form.addEventListener('submit', async event => {
+      event.preventDefault();
+      const release = {
+        app: document.getElementById('app').value,
+        from: document.getElementById('from').value,
+        to: document.getElementById('to').value,
+      };
+
+      const response = await fetch('/api/release', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(release),
+      });
+      const data = await response.json();
+
+      if (!data.ok) {
+        status.textContent = data.message;
+        list.innerHTML = '';
+        return;
+      }
+      status.textContent = `${data.pullRequests.length} merged PRs`;
+      list.innerHTML = data.pullRequests.map(pr => `<li>${pr.author}: ${pr.title}</li>`).join('');
+    });
+  </script>
+</body>
+</html>
