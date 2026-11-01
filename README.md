@@ -176,6 +176,7 @@ The token **never reaches the page**: the form only learns whether it works and 
 - **Only this tool reads it:** a token in the monorepo's root `.env` could be loaded by other tools there (dev servers, Docker Compose, build tools). In `server/.env`, only this server sees it.
 - **The server only accepts requests from this computer:** it listens on `127.0.0.1` only.
 - **And only from its own page:** requests from other websites, or addressed to it under any other name than `localhost` or `127.0.0.1`, are refused.
+- **And only from a page it served:** each start makes a new random page token, puts it in the page, and refuses API calls that don't send it back as `X-Token`.
 
 Anything else running on your computer can still reach it, so don't keep the token in `.env` on a shared machine.
 
@@ -231,6 +232,8 @@ server/
 ## API
 
 All answers are JSON with `ok: true/false`. Errors come with a `message` and a matching HTTP status.
+
+Every API call needs the `X-Token` header: a random page token the server makes each time it starts and puts in `index.html`. Without it (or after a restart, until the page is reloaded) the answer is `403`.
 
 | Method | Path | Does |
 |---|---|---|

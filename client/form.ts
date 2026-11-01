@@ -25,12 +25,15 @@ interface ReleaseAnswer { pageUrl: string; pullRequestCount: number }
 // What the form sends to POST /api/release.
 interface ReleaseRequest { repo: string; app: string; version: string; date: string; from: string; to: string }
 
+// The page token the server put in index.html. Sent with every API call as X-Token.
+const PAGE_TOKEN = document.querySelector<HTMLMetaElement>('meta[name="page-token"]')?.content ?? '';
+
 // Calls the release server. GET without a body, POST with one.
 // Returns the JSON answer, or throws an Error with a message a person can act on.
 async function api<Answer>(url: string, body?: object, signal?: AbortSignal): Promise<Answer> {
-  const options: RequestInit = body === undefined ? { signal } : {
+  const options: RequestInit = body === undefined ? { headers: { 'X-Token': PAGE_TOKEN }, signal } : {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'X-Token': PAGE_TOKEN },
     body: JSON.stringify(body),
     signal,
   };

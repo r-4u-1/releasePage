@@ -154,7 +154,11 @@ async function handleRequest(request: http.IncomingMessage, response: http.Serve
       return;
     }
 
-    // Everything else is the API.
+    // Everything else is the API, and needs the page token this run put in index.html.
+    if (!web.hasPageToken(request)) {
+      fail(403, 'This page is out of date: the release server was restarted. Reload the page.');
+    }
+
     let answer: object;
     if (method === 'GET' && pathname === '/api/folder') {
       answer = checkFolder(searchParams.get('path') ?? '');

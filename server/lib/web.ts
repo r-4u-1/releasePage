@@ -1,4 +1,5 @@
 // The web parts: who may call the server, reading what the form sent, and sending answers and files back.
+import crypto from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { stripTypeScriptTypes } from 'node:module';
@@ -30,6 +31,17 @@ export function isFromOwnPage(request: IncomingMessage): boolean {
   return host !== undefined && OWN_HOSTS.includes(host) && (!origin || origin === `http://${host}`);
 }
 
+// A new random page token every time the server starts. index.html gets it in place of {{PAGE_TOKEN}},
+// and the form sends it back as the X-Token header with every API call, so only a page this server
+// served can use the API. Not the Confluence token: that one stays in .env and never reaches the page.
+const PAGE_TOKEN = crypto.randomBytes(32).toString('hex');
+
+export function hasPageToken(request: IncomingMessage): boolean {
+  const sent = Buffer.from(String(request.headers['x-token'] ?? ''));
+  const expected = Buffer.from(PAGE_TOKEN);
+  return sent.length === expected.length && crypto.timingSafeEqual(sent, expected);
+}
+
 // Whether the address asks for one of the files in public/, e.g. "/style.css", or one of the form's scripts,
 // e.g. "/form.js". "/" is index.html. Returns the file name, or '' if it's not one of them.
 export function publicFileFor(pathname: string): string {
@@ -43,6 +55,14 @@ export function sendPublicFile(response: ServerResponse, fileName: string): void
     const typeScript = fs.readFileSync(path.join(CLIENT_DIR, fileName.replace(/\.js$/, '.ts')), 'utf8');
     response.writeHead(200, { 'Content-Type': CONTENT_TYPES['.js'] });
     response.end(stripTypeScriptTypes(typeScript));
+    return;
+  }
+
+  // The form page, with this run's page token filled in. Not cached, so a reload after a restart gets the new one.
+  if (fileName === 'index.html') {
+    const html = fs.readFileSync(path.join(PUBLIC_DIR, fileName), 'utf8');
+    response.writeHead(200, { 'Content-Type': CONTENT_TYPES['.html'], 'Cache-Control': 'no-store' });
+    response.end(html.replace('{{PAGE_TOKEN}}', PAGE_TOKEN));
     return;
   }
 
