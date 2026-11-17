@@ -20,7 +20,8 @@ function fillSelect(select, values, placeholder) {
   select.replaceChildren(new Option(placeholder, ''), ...values.map(value => new Option(value, value)));
 }
 
-/* ═══ MONOREPO — leaving the field asks the server for the repo's root; the browser remembers it ═══ */
+/* ═══ MONOREPO — repoPath from config.json, or else the path field ═══
+   Leaving the field asks the server for the repo's root; the browser remembers it. */
 const repoInput = getById('repo'), appSelect = getById('app'), fromSelect = getById('tagfrom'), toSelect = getById('tagto');
 let repo = '';
 
@@ -91,9 +92,25 @@ async function loadTags(app) {
 
 appSelect.addEventListener('change', () => loadTags(appSelect.value));
 
-// The monorepo path from last time.
-repoInput.value = localStorage.getItem('repo') ?? '';
-checkRepoFolder();
+// repoPath from config.json first. If it isn't set, or has no apps, the path field is shown
+// with the path from last time.
+async function loadRepo() {
+  const note = getById('repo-note');
+  try {
+    const { folder, apps } = await api('/api/repo-path');
+    repo = folder;
+    fillSelect(appSelect, apps, '— Select app —');
+    note.textContent = 'Monorepo (repoPath in config.json): ';
+    note.append(Object.assign(document.createElement('code'), { textContent: folder }));
+  } catch (err) {
+    note.textContent = err.message + '. Enter the path below, or set repoPath in server/config.json.';
+    getById('repo-field').hidden = false;
+    repoInput.value = localStorage.getItem('repo') ?? '';
+    checkRepoFolder();
+  }
+}
+
+loadRepo();
 
 /* ═══ CREATE PAGE ═══ */
 getById('mainForm').addEventListener('submit', async event => {

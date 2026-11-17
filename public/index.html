@@ -12,7 +12,9 @@
     <p class="sub">Lists every merged change between two tags of an app and publishes it as a Confluence page.</p>
 
     <form id="mainForm">
-      <div class="field full-width">
+      <p class="repo-note full-width" id="repo-note">Looking for the monorepo in config.json…</p>
+
+      <div class="field full-width" id="repo-field" hidden>
         <label for="repo">Path to monorepo</label>
         <input type="text" id="repo" placeholder="C:\git\monorepo" autocomplete="off" spellcheck="false"/>
         <span class="err-msg" id="e-repo"></span>

@@ -10,6 +10,7 @@
 //        - opens the new page in the browser.
 //
 // The API:
+//   GET  /api/repo-path                the repo's root from repoPath in config.json, and its apps
 //   GET  /api/folder?path=…            is this path a folder in a git repo? Returns the repo's root
 //   GET  /api/token                    is there a working token in server/.env?
 //   GET  /api/apps?repo=…              the app names in that repo
@@ -50,6 +51,20 @@ async function createRelease(body: any): Promise<{ pageUrl: string; pullRequestC
   return { pageUrl, pullRequestCount: pullRequests.length };
 }
 
+// GET /api/repo-path
+// The repo from repoPath in config.json, if it's set and has apps in it.
+// When it fails, the form asks for the path instead.
+function repoPathFromConfig(): { folder: string; apps: string[] } {
+  const repoPath = (config.repoPath ?? '').trim();
+  // Without this check, git would run in the server's own folder.
+  if (!repoPath) throw new Error('No repoPath in config.json');
+  if (!fs.existsSync(repoPath)) throw new Error(`repoPath in config.json doesn't exist: ${repoPath}`);
+  const folder = git.findRepo(repoPath);
+  const apps = git.listApps(folder);
+  if (apps.length === 0) throw new Error(`No apps matching ${config.appPattern} in ${folder}`);
+  return { folder, apps };
+}
+
 // ═══════════════════════════════════════════════════════════════════════════
 // Requests and answers
 // ═══════════════════════════════════════════════════════════════════════════
@@ -79,32 +94,46 @@ function sendJson(response: http.ServerResponse, status: number, data: object): 
   response.end(JSON.stringify(data));
 }
 
+// The API's routes, as "METHOD /path".
+// An object rather than an enum: Node runs this file as it is, and it can't run an enum.
+const Route = {
+  RepoPath: 'GET /api/repo-path',
+  Folder: 'GET /api/folder',
+  Token: 'GET /api/token',
+  Apps: 'GET /api/apps',
+  Tags: 'GET /api/tags',
+  Release: 'POST /api/release',
+} as const;
+
+type RouteKey = (typeof Route)[keyof typeof Route];
+
+// Each route returns the answer, which is sent as { ok: true, ...answer }.
+type RouteHandler = (query: URLSearchParams, request: http.IncomingMessage) => object | Promise<object>;
+
+// A Record over RouteKey: leaving out a route is a type error.
+const routes: Record<RouteKey, RouteHandler> = {
+  [Route.RepoPath]: () => repoPathFromConfig(),
+  [Route.Folder]: query => ({ folder: git.findRepo(query.get('path') ?? '') }),
+  [Route.Token]: async () => ({ message: `Authenticated as ${await confluence.checkToken()}` }),
+  [Route.Apps]: query => ({ apps: git.listApps(query.get('repo') ?? '') }),
+  [Route.Tags]: query => ({ tags: git.listTags(query.get('repo') ?? '', query.get('app') ?? '') }),
+  [Route.Release]: async (query, request) => createRelease(await readJsonBody(request)),
+};
+
 async function handleRequest(request: http.IncomingMessage, response: http.ServerResponse): Promise<void> {
   try {
     const method = request.method ?? 'GET';
     const { pathname, searchParams } = new URL(request.url ?? '/', 'http://localhost');
-    const repo = searchParams.get('repo') ?? '';
 
-    let answer: object;
-    if (method === 'GET' && pathname === '/api/folder') {
-      answer = { folder: git.findRepo(searchParams.get('path') ?? '') };
-    } else if (method === 'GET' && pathname === '/api/token') {
-      answer = { message: `Authenticated as ${await confluence.checkToken()}` };
-    } else if (method === 'GET' && pathname === '/api/apps') {
-      answer = { apps: git.listApps(repo) };
-    } else if (method === 'GET' && pathname === '/api/tags') {
-      answer = { tags: git.listTags(repo, searchParams.get('app') ?? '') };
-    } else if (method === 'POST' && pathname === '/api/release') {
-      answer = await createRelease(await readJsonBody(request));
+    // Any other request finds nothing here, hence the "| undefined".
+    const route: RouteHandler | undefined = routes[`${method} ${pathname}` as RouteKey];
+    if (route) {
+      sendJson(response, 200, { ok: true, ...await route(searchParams, request) });
     } else if (method === 'GET') {
       sendPublicFile(response, pathname);
-      return;
     } else {
       sendJson(response, 404, { ok: false, message: `No ${method} ${pathname}` });
-      return;
     }
-
-    sendJson(response, 200, { ok: true, ...answer });
   } catch (error) {
     sendJson(response, 500, { ok: false, message: (error as Error).message });
   }

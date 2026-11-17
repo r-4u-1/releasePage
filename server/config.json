@@ -1,5 +1,6 @@
 {
   "port": 3000,
+  "repoPath": "",
   "appPattern": "*-app",
   "confluenceBaseUrl": "https://confluence.example.com",
   "parentPageIds": {

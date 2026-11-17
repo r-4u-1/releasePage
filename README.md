@@ -20,6 +20,7 @@ New in this version:
 Requires **Node.js 22.18 or newer** (it runs the TypeScript as it is) and **git**.
 
 1. In [`server/config.json`](server/config.json), set:
+   - `repoPath`: the path to your monorepo, e.g. `"C:\\git\\monorepo"` (in JSON a `\` is written `\\`; `"C:/git/monorepo"` works too). The form uses it and hides the path field. If it's empty, doesn't exist or has no apps, the form says why and shows the path field instead,
    - `confluenceBaseUrl`: your Confluence's address,
    - `parentPageIds`: for each app, the ID of the page its release pages go under (it's in the page's address, `…pageId=123456`),
    - `appPattern`: which top-level folders are apps. The default `*-app` lists `web-app` and `admin-app`, but not `docs`,
@@ -61,6 +62,7 @@ The **Author** is the person who opened the PR:
 
 | Method | Path | Does |
 |---|---|---|
+| `GET` | `/api/repo-path` | The repo's root from `repoPath` in `config.json`, and its apps. Fails if it isn't set, doesn't exist or has no apps. |
 | `GET` | `/api/folder?path=…` | The git repo's root folder for that path. |
 | `GET` | `/api/token` | Checks the token in `server/.env` with Confluence. Returns "Authenticated as …". |
 | `GET` | `/api/apps?repo=…` | The app names in that repo. |

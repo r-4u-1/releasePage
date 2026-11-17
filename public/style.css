@@ -57,6 +57,10 @@ input:focus, select:focus { outline: 2px solid var(--accent); outline-offset: -1
 
 .err-msg { min-height: 1em; font-size: 12px; color: var(--err); }
 
+.repo-note { margin: 0; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.repo-note code { color: var(--text); }
+[hidden] { display: none !important; }
+
 .token-status {
   display: flex;
   align-items: center;
