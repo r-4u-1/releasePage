@@ -1,0 +1,22 @@
+/* HYPERSPEED INTRO — goes with hyperspeed.js
+   A black layer over the whole page with a canvas that hyperspeed.js draws the stars on.
+   When the intro is done, hyperspeed.js adds .fading, the layer fades out and is removed. */
+
+#intro {
+  position: fixed;
+  inset: 0; /* covers the whole window */
+  z-index: 9999;
+  background: #000000;
+  pointer-events: none;
+}
+
+#introCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+#intro.fading {
+  opacity: 0;
+  transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+}

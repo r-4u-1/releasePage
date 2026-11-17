@@ -69,13 +69,29 @@ The **Author** is the person who opened the PR:
 | `GET` | `/api/tags?repo=…&app=…` | The app's `OLD` / `NEW` tags, highest number first. |
 | `POST` | `/api/release` | `{ repo, app, from, to, version, date }`: creates the page, opens it, and returns `pageUrl` and `pullRequestCount`. |
 
+## Effects
+
+Two animations, taken from v-8. Each one is a `.css` + `.js` pair in `public/effects/`, linked from `index.html`:
+
+| Effect | Files | In `index.html` |
+|---|---|---|
+| **Hyperspeed intro** | `hyperspeed.css`, `hyperspeed.js` | `<div id="intro">…</div>` first in `<body>` |
+| **Text reveal** | `text-reveal.css`, `text-reveal.js` | `data-text-reveal` on any element with plain text (the `<h1>`) |
+
+- The text reveal waits for the intro's `intro-done` event, or starts right away if the intro isn't on the page.
+- To turn one off, remove its two files' `<link>`/`<script>` lines and its markup.
+- With **reduce motion** turned on in the system settings, both are skipped.
+
 ## Files
 
 ```
 public/
 ├── index.html          The form
 ├── form.js             Its script: token status, apps → tags, creating the page
-└── style.css           Its styles
+├── style.css           Its styles
+└── effects/            The page's animations, one .css + .js pair each (see Effects)
+    ├── hyperspeed.*    The intro: stars rush out from the centre, then the page appears
+    └── text-reveal.*   The heading's letters rise in, then slide into place
 server/
 ├── server.ts           Serves the form and answers the API
 ├── lib/

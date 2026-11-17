@@ -5,10 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Release page</title>
   <link href="style.css" rel="stylesheet"/>
+  <!-- Effects: each is a .css + .js pair in effects/. Remove a pair (and its markup below) to turn it off. -->
+  <link href="effects/hyperspeed.css" rel="stylesheet"/>
+  <link href="effects/text-reveal.css" rel="stylesheet"/>
 </head>
 <body>
+  <!-- Effect: hyperspeed intro (effects/hyperspeed.*) -->
+  <div id="intro" aria-hidden="true"><canvas id="introCanvas"></canvas></div>
+
   <main class="card">
-    <h1>Create a release page</h1>
+    <!-- Effect: text reveal (effects/text-reveal.*) plays on every data-text-reveal element -->
+    <h1 data-text-reveal>Create a release page</h1>
     <p class="sub">Lists every merged change between two tags of an app and publishes it as a Confluence page.</p>
 
     <form id="mainForm">
@@ -58,5 +65,8 @@
   </main>
 
   <script src="form.js"></script>
+  <!-- Effects: the intro first, so the text reveal knows to wait for it -->
+  <script src="effects/hyperspeed.js"></script>
+  <script src="effects/text-reveal.js"></script>
 </body>
 </html>

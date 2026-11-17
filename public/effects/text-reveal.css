@@ -1,0 +1,62 @@
+/* TEXT REVEAL — goes with text-reveal.js
+   Each letter of a [data-text-reveal] element is its own <span class="char">.
+   A letter goes through three steps (text-reveal.js sets the class):
+     .rising  — rises up from below, fading in, still shifted to the right
+     .sliding — slides left into its place
+     .done    — in place */
+
+:root {
+  --rise-start: 65px;   /* how far below its place a letter starts */
+  --slide-start: 48px;  /* how far right of its place a letter starts */
+  --rise-time: 580ms;
+  --slide-time: 460ms;
+}
+
+/* A word: keeps its letters together, so a line only wraps between words. */
+.char-word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.char {
+  display: inline-block;
+  opacity: 0;
+  transform: translateY(var(--rise-start)) translateX(var(--slide-start));
+  will-change: transform, opacity; /* tells the browser these will animate, so it's smoother */
+}
+
+.char.rising {
+  animation: rise var(--rise-time) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.char.sliding {
+  opacity: 1;
+  transform: translateY(0) translateX(var(--slide-start));
+  animation: slide var(--slide-time) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.char.done {
+  opacity: 1;
+  transform: none;
+  will-change: auto;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--rise-start)) translateX(var(--slide-start));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) translateX(var(--slide-start));
+  }
+}
+
+@keyframes slide {
+  from {
+    transform: translateY(0) translateX(var(--slide-start));
+  }
+  to {
+    transform: translateY(0) translateX(0);
+  }
+}
