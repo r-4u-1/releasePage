@@ -24,7 +24,7 @@ Requires **Node.js 22.18 or newer** (it runs the TypeScript as it is) and **git*
    - `confluenceBaseUrl`: your Confluence's address,
    - `parentPageIds`: for each app, the ID of the page its release pages go under (it's in the page's address, `…pageId=123456`),
    - `appPattern`: which top-level folders are apps. The default `*-app` lists `web-app` and `admin-app`, but not `docs`,
-   - `appsWithVerification` and `verificationInfo`: see [The release page](#the-release-page).
+   - `verificationInfo`: the text of the Verification info box, see [The release page](#the-release-page).
 2. Create a Confluence personal access token (**profile picture → Settings → Personal Access Tokens**) and put it in `server/.env`:
 
 ```
@@ -45,7 +45,15 @@ node server.ts
 
 **Content:** a summary line (version, release date, tags, number of PRs) and a table with one row per merged PR.
 
-**Apps in `appsWithVerification`** get two more, empty columns, **isVerified** and **Note**, for people to fill in on the page. Beside the table is Confluence's **Info** panel with the text from `verificationInfo`.
+**Each app can have its own page** in [`server/lib/release-pages/`](server/lib/release-pages/), one file per app, e.g. `a-app.ts`. Apps without a file get the base template, `basePage` in `base.ts`: the summary line and the table.
+
+An app's file passes its changes to the base template:
+- `extraColumns`: more table columns, left empty for people to fill in,
+- `sidebar`: a narrow column beside the table, e.g. Confluence's **Info** panel made with `infoBox(title, text)`.
+
+`a-app` and `b-app` add **isVerified** and **Note** columns, and a **Verification** info box with the text from `verificationInfo`.
+
+To give another app its own page: copy `a-app.ts` to `<app>.ts`, change it, and add it to `appPages` in `release-pages/index.ts`.
 
 ## How the PRs are found
 
@@ -98,7 +106,11 @@ server/
 │   ├── settings.ts     config.json and the paths
 │   ├── git.ts          Apps, tags and merged PRs
 │   ├── confluence.ts   The token, checking it, creating a page
-│   ├── release-page-content.ts  The page's table and info box
+│   ├── release-pages/  The page's content
+│   │   ├── base.ts     The base template and its pieces (summary, table, info box, sidebar)
+│   │   ├── a-app.ts    One file per app with its own page
+│   │   ├── b-app.ts
+│   │   └── index.ts    Picks the app's file, or the base template
 │   └── browser.ts      Opens the new page in the browser
 ├── config.json         Settings
 └── .env                Your Confluence token (you create it; gitignored)

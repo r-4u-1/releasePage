@@ -21,7 +21,7 @@
 //   settings.ts              config.json and the paths
 //   git.ts                   apps, tags and merged PRs
 //   confluence.ts            the token, checking it, creating a page
-//   release-page-content.ts  the page's table and info box
+//   release-pages/           the page's content: a base template, and one file per app
 //   browser.ts               opening the new page in the browser
 //
 // Every answer to the form is JSON: { ok: true, ... } or { ok: false, message: "what went wrong" }.
@@ -32,7 +32,7 @@ import path from 'node:path';
 import { config, PORT, PUBLIC_DIR } from './lib/settings.ts';
 import * as git from './lib/git.ts';
 import * as confluence from './lib/confluence.ts';
-import { releasePageContent } from './lib/release-page-content.ts';
+import { releasePageContent } from './lib/release-pages/index.ts';
 import { openInBrowser } from './lib/browser.ts';
 
 // POST /api/release
